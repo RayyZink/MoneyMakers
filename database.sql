@@ -127,7 +127,7 @@ create table Mouvement
 (
     idMouvement       int auto_increment
         primary key,
-    dateMouvement     date          default curdate()          not null,
+    dateMouvement     date          default (curdate())          not null,
     idCompte          int                                      not null,
     idTiers           int           default null               null,
     idCategorie       int           default null               null,
