@@ -12,7 +12,6 @@ create table Utilisateur
     nomUtilisateur    varchar(50)                           not null,
     prenomUtilisateur varchar(50)                           not null,
     login             varchar(50)                           not null,
-    mdp               varchar(50)                           null,
     hashcode          varchar(128)                          null,
     dateHeureCreation timestamp default current_timestamp() not null,
     dateHeureMAJ      timestamp default current_timestamp() null,
