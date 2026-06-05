@@ -1,178 +1,163 @@
 -- ============================================================
--- MONEY_2026 - Migration mono-utilisateur → multi-utilisateur
+-- MONEY_2026 - Script complet
+-- Migration mono-utilisateur → multi-utilisateur
+-- + Triggers de sécurité
 -- ============================================================
 
-create database MONEY_2026;
-use MONEY_2026;
+CREATE DATABASE IF NOT EXISTS MONEY_2026;
+USE MONEY_2026;
 
-create table Utilisateur
+-- ============================================================
+-- TABLES
+-- ============================================================
+
+CREATE TABLE Utilisateur
 (
-    idUtilisateur     int auto_increment
-        primary key,
-    nomUtilisateur    varchar(50)                           not null,
-    prenomUtilisateur varchar(50)                           not null,
-    login             varchar(50)                           not null,
-    hashcode          varchar(128)                          null,
-    dateHeureCreation timestamp default current_timestamp() not null,
-    dateHeureMAJ      timestamp default current_timestamp() null,
-    ville             varchar(50)                           null,
-    codePostal        char(5)                               null,
-    -- [AJOUT] Contrainte unicité sur le login pour éviter les doublons
-    constraint Utilisateur_login_unique unique (login)
+    idUtilisateur     INT AUTO_INCREMENT PRIMARY KEY,
+    nomUtilisateur    VARCHAR(50)                           NOT NULL,
+    prenomUtilisateur VARCHAR(50)                           NOT NULL,
+    login             VARCHAR(50)                           NOT NULL,
+    mdp               VARCHAR(50)                           NULL,
+    hashcode          VARCHAR(128)                          NULL,
+    dateHeureCreation TIMESTAMP DEFAULT CURRENT_TIMESTAMP() NOT NULL,
+    dateHeureMAJ      TIMESTAMP DEFAULT CURRENT_TIMESTAMP() NULL,
+    ville             VARCHAR(50)                           NULL,
+    codePostal        CHAR(5)                               NULL,
+    -- Unicité du login pour éviter les doublons
+    CONSTRAINT Utilisateur_login_unique UNIQUE (login)
 );
 
--- ============================================================
--- [MODIF] Categorie : ajout de idUtilisateur
--- Chaque utilisateur gère ses propres catégories.
--- NULL = catégorie système partagée (visible par tous, non modifiable par les users).
--- ============================================================
-create table Categorie
+-- ------------------------------------------------------------
+-- Categorie : rattachée à un utilisateur (NULL = système partagée)
+-- ------------------------------------------------------------
+CREATE TABLE Categorie
 (
-    idCategorie       int auto_increment
-        primary key,
-    nomCategorie      varchar(50)                           not null,
-    idUtilisateur     int                                   null     comment 'NULL = catégorie système partagée, sinon appartient à cet utilisateur',
-    dateHeureCreation timestamp default current_timestamp() null,
-    dateHeureMAJ      timestamp default current_timestamp() not null,
-    constraint Categorie_Utilisateur_fk
-        foreign key (idUtilisateur) references Utilisateur (idUtilisateur)
-            on delete cascade
+    idCategorie       INT AUTO_INCREMENT PRIMARY KEY,
+    nomCategorie      VARCHAR(50)                           NOT NULL,
+    idUtilisateur     INT                                   NULL    COMMENT 'NULL = catégorie système partagée, sinon appartient à cet utilisateur',
+    dateHeureCreation TIMESTAMP DEFAULT CURRENT_TIMESTAMP() NULL,
+    dateHeureMAJ      TIMESTAMP DEFAULT CURRENT_TIMESTAMP() NOT NULL,
+    CONSTRAINT Categorie_Utilisateur_fk
+        FOREIGN KEY (idUtilisateur) REFERENCES Utilisateur (idUtilisateur)
+            ON DELETE CASCADE
 );
 
--- ============================================================
--- [MODIF] SousCategorie : idUtilisateur hérité de Categorie,
--- pas besoin de le dupliquer ici — la FK vers Categorie suffit.
--- ============================================================
-create table SousCategorie
+-- ------------------------------------------------------------
+-- SousCategorie : hérite du user via sa Categorie parente
+-- ------------------------------------------------------------
+CREATE TABLE SousCategorie
 (
-    idSousCategorie   int auto_increment
-        primary key,
-    nomSousCategorie  varchar(50)                           not null,
-    idcategorie       int                                   not null,
-    dateHeureCreation timestamp default current_timestamp() not null,
-    dateHeureMAJ      timestamp default current_timestamp() not null,
-    montant_base      int       default 10                  null,
-    periode           char      default 'M'                 not null comment 'M (mensuel) H (Hebdo) A (Aléatoire) Q (Quotidien)',
-    constraint SousCategorie_Categorie_fk
-        foreign key (idcategorie) references Categorie (idCategorie)
-            on delete cascade
+    idSousCategorie   INT AUTO_INCREMENT PRIMARY KEY,
+    nomSousCategorie  VARCHAR(50)                           NOT NULL,
+    idcategorie       INT                                   NOT NULL,
+    dateHeureCreation TIMESTAMP DEFAULT CURRENT_TIMESTAMP() NOT NULL,
+    dateHeureMAJ      TIMESTAMP DEFAULT CURRENT_TIMESTAMP() NOT NULL,
+    montant_base      INT       DEFAULT 10                  NULL,
+    periode           CHAR      DEFAULT 'M'                 NOT NULL COMMENT 'M (mensuel) H (Hebdo) A (Aléatoire) Q (Quotidien)',
+    CONSTRAINT SousCategorie_Categorie_fk
+        FOREIGN KEY (idcategorie) REFERENCES Categorie (idCategorie)
+            ON DELETE CASCADE
 );
 
-create table Compte
+CREATE TABLE Compte
 (
-    idCompte             int auto_increment
-        primary key,
-    descriptionCompte    varchar(50)                                not null,
-    nomBanque            varchar(50)                                not null,
-    idUtilisateur        int                                        not null,
-    dateHeureCreation    timestamp      default current_timestamp() not null,
-    dateHeureMAJ         timestamp      default current_timestamp() null,
-    montantInitial       decimal(7, 2)  default 0.00                not null,
-    dernierMontantCalcule decimal(10, 2) default 0.00               not null,
-    constraint Compte_Utilisateur_fk
-        foreign key (idUtilisateur) references Utilisateur (idUtilisateur)
-            on delete cascade
+    idCompte              INT AUTO_INCREMENT PRIMARY KEY,
+    descriptionCompte     VARCHAR(50)                                NOT NULL,
+    nomBanque             VARCHAR(50)                                NOT NULL,
+    idUtilisateur         INT                                        NOT NULL,
+    dateHeureCreation     TIMESTAMP      DEFAULT CURRENT_TIMESTAMP() NOT NULL,
+    dateHeureMAJ          TIMESTAMP      DEFAULT CURRENT_TIMESTAMP() NULL,
+    montantInitial        DECIMAL(7, 2)  DEFAULT 0.00                NOT NULL,
+    dernierMontantCalcule DECIMAL(10, 2) DEFAULT 0.00                NOT NULL,
+    CONSTRAINT Compte_Utilisateur_fk
+        FOREIGN KEY (idUtilisateur) REFERENCES Utilisateur (idUtilisateur)
+            ON DELETE CASCADE
 );
 
-create table Tiers
+CREATE TABLE Tiers
 (
-    idTiers               int auto_increment
-        primary key,
-    nomTiers              varchar(50)                           not null,
-    dateHeureCreation     timestamp default current_timestamp() not null,
-    dateHeureMAJ          timestamp default current_timestamp() not null,
-    idUtilisateur         int                                   not null comment 'Utilisateur propriétaire de ce tiers',
-    idSousCategorieDefaut int       default null                null    comment 'Sous-catégorie par défaut associée à ce tiers',
-    constraint Tiers_Utilisateur_fk
-        foreign key (idUtilisateur) references Utilisateur (idUtilisateur),
-    constraint Tiers_SousCategorie_fk
-        foreign key (idSousCategorieDefaut) references SousCategorie (idSousCategorie)
-            on delete set null
+    idTiers               INT AUTO_INCREMENT PRIMARY KEY,
+    nomTiers              VARCHAR(50)                           NOT NULL,
+    dateHeureCreation     TIMESTAMP DEFAULT CURRENT_TIMESTAMP() NOT NULL,
+    dateHeureMAJ          TIMESTAMP DEFAULT CURRENT_TIMESTAMP() NOT NULL,
+    idUtilisateur         INT                                   NOT NULL COMMENT 'Utilisateur propriétaire de ce tiers',
+    idSousCategorieDefaut INT       DEFAULT NULL                NULL   COMMENT 'Sous-catégorie par défaut associée à ce tiers',
+    CONSTRAINT Tiers_Utilisateur_fk
+        FOREIGN KEY (idUtilisateur) REFERENCES Utilisateur (idUtilisateur),
+    CONSTRAINT Tiers_SousCategorie_fk
+        FOREIGN KEY (idSousCategorieDefaut) REFERENCES SousCategorie (idSousCategorie)
+            ON DELETE SET NULL
 );
 
--- ============================================================
--- [MODIF] Virement : ajout de idUtilisateurInitiateur
--- Permet de tracer qui a initié le virement.
--- [SECURITE] La vérification que les deux comptes appartiennent
--- au même utilisateur (ou à des utilisateurs consentants)
--- doit être faite au niveau applicatif / procédure stockée.
--- Pour un virement inter-utilisateurs, on autorise explicitement
--- via un champ virementInterUtilisateur.
--- ============================================================
-create table Virement
+-- ------------------------------------------------------------
+-- Virement : tracé + flag inter-utilisateurs
+-- ------------------------------------------------------------
+CREATE TABLE Virement
 (
-    idVirement               int auto_increment
-        primary key,
-    idCompteDebit            int                                       not null,
-    idCompteCredit           int                                       not null,
-    montant                  decimal(6, 2) default 0.00                not null,
-    dateVirement             date          default (curdate())          not null,
-    dateHeureCreation        timestamp     default current_timestamp() not null,
-    dateHeureMAJ             timestamp     default current_timestamp() not null,
-    commentaire              varchar(255)                              null,
-    -- [AJOUT] Initiateur du virement (utilisateur connecté au moment de la création)
-    idUtilisateurInitiateur  int                                       not null,
-    -- [AJOUT] Flag pour distinguer un virement entre deux utilisateurs différents
-    virementInterUtilisateur tinyint(1)    default 0                   not null comment '0 = même utilisateur, 1 = inter-utilisateurs',
-    constraint Virement_compteCrediteur_fk
-        foreign key (idCompteCredit) references Compte (idCompte),
-    constraint Virement_compteDebiteur_fk
-        foreign key (idCompteDebit) references Compte (idCompte),
-    constraint Virement_Utilisateur_fk
-        foreign key (idUtilisateurInitiateur) references Utilisateur (idUtilisateur)
+    idVirement               INT AUTO_INCREMENT PRIMARY KEY,
+    idCompteDebit            INT                                       NOT NULL,
+    idCompteCredit           INT                                       NOT NULL,
+    montant                  DECIMAL(6, 2) DEFAULT 0.00                NOT NULL,
+    dateVirement             DATE          DEFAULT (CURDATE())          NOT NULL,
+    dateHeureCreation        TIMESTAMP     DEFAULT CURRENT_TIMESTAMP() NOT NULL,
+    dateHeureMAJ             TIMESTAMP     DEFAULT CURRENT_TIMESTAMP() NOT NULL,
+    commentaire              VARCHAR(255)                              NULL,
+    idUtilisateurInitiateur  INT                                       NOT NULL COMMENT 'Utilisateur connecté au moment de la création',
+    virementInterUtilisateur TINYINT(1)    DEFAULT 0                   NOT NULL COMMENT '0 = même utilisateur, 1 = inter-utilisateurs',
+    CONSTRAINT Virement_compteCrediteur_fk
+        FOREIGN KEY (idCompteCredit) REFERENCES Compte (idCompte),
+    CONSTRAINT Virement_compteDebiteur_fk
+        FOREIGN KEY (idCompteDebit) REFERENCES Compte (idCompte),
+    CONSTRAINT Virement_Utilisateur_fk
+        FOREIGN KEY (idUtilisateurInitiateur) REFERENCES Utilisateur (idUtilisateur)
 );
 
-create table Mouvement
+CREATE TABLE Mouvement
 (
-    idMouvement       int auto_increment
-        primary key,
-    dateMouvement     date          default (curdate())          not null,
-    idCompte          int                                      not null,
-    idTiers           int           default null               null,
-    idCategorie       int           default null               null,
-    idSousCategorie   int           default null               null,
-    idVirement        int                                      null,
-    montant           decimal(6, 2)                            null,
-    typeMouvement     char          default 'D'                null    comment 'D = Débit, C = Crédit',
-    dateHeureCreation timestamp     default current_timestamp() not null,
-    dateHeureMAJ      timestamp     default current_timestamp() not null,
-    constraint Mouvement_Categorie_fk
-        foreign key (idCategorie) references Categorie (idCategorie),
-    constraint Mouvement_Compte_fk
-        foreign key (idCompte) references Compte (idCompte)
-            on delete cascade,
-    constraint Mouvement_SousCategorie_fk
-        foreign key (idSousCategorie) references SousCategorie (idSousCategorie)
-            on update cascade on delete set null,
-    constraint Mouvement_Tiers_fk
-        foreign key (idTiers) references Tiers (idTiers),
-    constraint Mouvement_Virement_fk
-        foreign key (idVirement) references Virement (idVirement)
-            on update cascade on delete set null
+    idMouvement       INT AUTO_INCREMENT PRIMARY KEY,
+    dateMouvement     DATE          DEFAULT (CURDATE())          NOT NULL,
+    idCompte          INT                                        NOT NULL,
+    idTiers           INT           DEFAULT NULL                 NULL,
+    idCategorie       INT           DEFAULT NULL                 NULL,
+    idSousCategorie   INT           DEFAULT NULL                 NULL,
+    idVirement        INT                                        NULL,
+    montant           DECIMAL(6, 2)                              NULL,
+    typeMouvement     CHAR          DEFAULT 'D'                  NULL COMMENT 'D = Débit, C = Crédit',
+    dateHeureCreation TIMESTAMP     DEFAULT CURRENT_TIMESTAMP() NOT NULL,
+    dateHeureMAJ      TIMESTAMP     DEFAULT CURRENT_TIMESTAMP() NOT NULL,
+    CONSTRAINT Mouvement_Categorie_fk
+        FOREIGN KEY (idCategorie) REFERENCES Categorie (idCategorie),
+    CONSTRAINT Mouvement_Compte_fk
+        FOREIGN KEY (idCompte) REFERENCES Compte (idCompte)
+            ON DELETE CASCADE,
+    CONSTRAINT Mouvement_SousCategorie_fk
+        FOREIGN KEY (idSousCategorie) REFERENCES SousCategorie (idSousCategorie)
+            ON UPDATE CASCADE ON DELETE SET NULL,
+    CONSTRAINT Mouvement_Tiers_fk
+        FOREIGN KEY (idTiers) REFERENCES Tiers (idTiers),
+    CONSTRAINT Mouvement_Virement_fk
+        FOREIGN KEY (idVirement) REFERENCES Virement (idVirement)
+            ON UPDATE CASCADE ON DELETE SET NULL
 );
 
 -- ============================================================
 -- VUES
 -- ============================================================
 
--- [MODIF] V_CATEGORIE : filtre par utilisateur
--- Renvoie les catégories système (idUtilisateur IS NULL)
--- + les catégories propres à l'utilisateur passé en contexte.
--- En pratique, le filtre se fait côté applicatif via un paramètre ;
--- ici la vue expose toutes les données, la sécurité est en procédure.
-create view V_CATEGORIE as
-select c.idCategorie       AS idCategorie,
+CREATE VIEW V_CATEGORIE AS
+SELECT c.idCategorie       AS idCategorie,
        c.nomCategorie      AS nomCategorie,
        c.idUtilisateur     AS idUtilisateurCategorie,
        sc.idSousCategorie  AS idSousCategorie,
        sc.nomSousCategorie AS nomSousCategorie
-from Categorie c
-         join SousCategorie sc on sc.idcategorie = c.idCategorie
-order by c.idCategorie, sc.idSousCategorie;
+FROM Categorie c
+         JOIN SousCategorie sc ON sc.idcategorie = c.idCategorie
+ORDER BY c.idCategorie, sc.idSousCategorie;
 
--- [MODIF] V_MOUVEMENT : expose idUtilisateur du compte pour filtrage applicatif
-create view V_MOUVEMENT as
-select m.idMouvement         AS idMouvement,
+-- V_MOUVEMENT expose idUtilisateur pour filtrage applicatif
+-- Note : le JOIN sur Tiers est LEFT JOIN car idTiers peut être NULL
+CREATE VIEW V_MOUVEMENT AS
+SELECT m.idMouvement         AS idMouvement,
        m.dateMouvement       AS dateMouvement,
        c.idUtilisateur       AS idUtilisateur,
        c.descriptionCompte   AS descriptionCompte,
@@ -184,56 +169,210 @@ select m.idMouvement         AS idMouvement,
        sctg.idSousCategorie  AS idSousCategorie,
        m.montant             AS montant,
        m.typeMouvement       AS typeMouvement
-from Mouvement m
-         join Compte c on m.idCompte = c.idCompte
-         join Tiers t on m.idTiers = t.idTiers
-         join Categorie ctg on m.idCategorie = ctg.idCategorie
-         left join SousCategorie sctg on m.idSousCategorie = sctg.idSousCategorie
-order by m.dateMouvement;
+FROM Mouvement m
+         JOIN  Compte       c    ON m.idCompte       = c.idCompte
+         LEFT JOIN Tiers    t    ON m.idTiers         = t.idTiers
+         LEFT JOIN Categorie ctg ON m.idCategorie     = ctg.idCategorie
+         LEFT JOIN SousCategorie sctg ON m.idSousCategorie = sctg.idSousCategorie
+ORDER BY m.dateMouvement;
 
 -- ============================================================
--- PROCÉDURE : creerVirement
--- [NOUVEAU] Crée un virement sécurisé entre deux comptes.
--- - Vérifie que le compte débiteur appartient à l'initiateur.
--- - Vérifie que si les comptes sont de deux utilisateurs différents,
---   le flag inter-utilisateurs est bien positionné (extensible
---   pour y ajouter un mécanisme de consentement).
--- - Crée automatiquement les 2 mouvements (débit + crédit).
+-- TRIGGERS DE SÉCURITÉ
 -- ============================================================
-create procedure creerVirement(
-    IN pIdCompteDebit           int,
-    IN pIdCompteCredit          int,
-    IN pMontant                 decimal(6, 2),
-    IN pDateVirement            date,
-    IN pCommentaire             varchar(255),
-    IN pIdUtilisateurInitiateur int,
-    IN pIdCategorie             int,
-    IN pIdSousCategorie         int
+
+DELIMITER $$
+
+-- ------------------------------------------------------------
+-- trg_mouvement_before_insert
+-- Vérifie sur tout INSERT dans Mouvement :
+--   1. Catégorie accessible à l'utilisateur du compte
+--   2. SousCategorie cohérente avec la Categorie
+--   3. Tiers appartenant à l'utilisateur du compte
+-- ------------------------------------------------------------
+CREATE TRIGGER trg_mouvement_before_insert
+    BEFORE INSERT ON Mouvement
+    FOR EACH ROW
+BEGIN
+    DECLARE vIdUtilisateurCompte    INT;
+    DECLARE vIdUtilisateurCategorie INT;
+    DECLARE vIdUtilisateurTiers     INT;
+    DECLARE vIdCategorieDeScat      INT;
+
+    -- Propriétaire du compte ciblé
+    SELECT idUtilisateur INTO vIdUtilisateurCompte
+    FROM Compte WHERE idCompte = NEW.idCompte;
+
+    -- Vérification Catégorie
+    IF NEW.idCategorie IS NOT NULL THEN
+        SELECT idUtilisateur INTO vIdUtilisateurCategorie
+        FROM Categorie WHERE idCategorie = NEW.idCategorie;
+
+        IF vIdUtilisateurCategorie IS NOT NULL
+            AND vIdUtilisateurCategorie != vIdUtilisateurCompte THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Sécurité : la catégorie n\'appartient pas à l\'utilisateur du compte.';
+        END IF;
+    END IF;
+
+    -- Vérification SousCategorie (cohérence avec Categorie)
+    IF NEW.idSousCategorie IS NOT NULL THEN
+        SELECT idcategorie INTO vIdCategorieDeScat
+        FROM SousCategorie WHERE idSousCategorie = NEW.idSousCategorie;
+
+        IF NEW.idCategorie IS NULL OR vIdCategorieDeScat != NEW.idCategorie THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Sécurité : la sous-catégorie n\'appartient pas à la catégorie indiquée.';
+        END IF;
+    END IF;
+
+    -- Vérification Tiers
+    IF NEW.idTiers IS NOT NULL THEN
+        SELECT idUtilisateur INTO vIdUtilisateurTiers
+        FROM Tiers WHERE idTiers = NEW.idTiers;
+
+        IF vIdUtilisateurTiers != vIdUtilisateurCompte THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Sécurité : le tiers n\'appartient pas à l\'utilisateur du compte.';
+        END IF;
+    END IF;
+END$$
+
+-- ------------------------------------------------------------
+-- trg_mouvement_before_update
+-- Mêmes vérifications sur UPDATE + blocage du changement de compte
+-- vers un compte d'un autre utilisateur
+-- ------------------------------------------------------------
+CREATE TRIGGER trg_mouvement_before_update
+    BEFORE UPDATE ON Mouvement
+    FOR EACH ROW
+BEGIN
+    DECLARE vIdUtilisateurCompte        INT;
+    DECLARE vIdUtilisateurAncienCompte  INT;
+    DECLARE vIdUtilisateurCategorie     INT;
+    DECLARE vIdUtilisateurTiers         INT;
+    DECLARE vIdCategorieDeScat          INT;
+
+    -- Propriétaire du nouveau compte ciblé
+    SELECT idUtilisateur INTO vIdUtilisateurCompte
+    FROM Compte WHERE idCompte = NEW.idCompte;
+
+    -- Blocage du déplacement inter-utilisateurs d'un mouvement
+    IF NEW.idCompte != OLD.idCompte THEN
+        SELECT idUtilisateur INTO vIdUtilisateurAncienCompte
+        FROM Compte WHERE idCompte = OLD.idCompte;
+
+        IF vIdUtilisateurAncienCompte != vIdUtilisateurCompte THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Sécurité : impossible de déplacer un mouvement vers le compte d\'un autre utilisateur.';
+        END IF;
+    END IF;
+
+    -- Vérification Catégorie
+    IF NEW.idCategorie IS NOT NULL THEN
+        SELECT idUtilisateur INTO vIdUtilisateurCategorie
+        FROM Categorie WHERE idCategorie = NEW.idCategorie;
+
+        IF vIdUtilisateurCategorie IS NOT NULL
+            AND vIdUtilisateurCategorie != vIdUtilisateurCompte THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Sécurité : la catégorie n\'appartient pas à l\'utilisateur du compte.';
+        END IF;
+    END IF;
+
+    -- Vérification SousCategorie
+    IF NEW.idSousCategorie IS NOT NULL THEN
+        SELECT idcategorie INTO vIdCategorieDeScat
+        FROM SousCategorie WHERE idSousCategorie = NEW.idSousCategorie;
+
+        IF NEW.idCategorie IS NULL OR vIdCategorieDeScat != NEW.idCategorie THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Sécurité : la sous-catégorie n\'appartient pas à la catégorie indiquée.';
+        END IF;
+    END IF;
+
+    -- Vérification Tiers
+    IF NEW.idTiers IS NOT NULL THEN
+        SELECT idUtilisateur INTO vIdUtilisateurTiers
+        FROM Tiers WHERE idTiers = NEW.idTiers;
+
+        IF vIdUtilisateurTiers != vIdUtilisateurCompte THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Sécurité : le tiers n\'appartient pas à l\'utilisateur du compte.';
+        END IF;
+    END IF;
+END$$
+
+DELIMITER ;
+
+-- ============================================================
+-- PROCÉDURES STOCKÉES
+-- ============================================================
+
+DELIMITER $$
+
+-- ------------------------------------------------------------
+-- creerVirement : virement sécurisé avec création des 2 mouvements
+-- Les triggers ci-dessus constituent un second filet de sécurité
+-- sur les INSERT de Mouvement générés ici.
+-- ------------------------------------------------------------
+CREATE PROCEDURE creerVirement(
+    IN pIdCompteDebit           INT,
+    IN pIdCompteCredit          INT,
+    IN pMontant                 DECIMAL(6, 2),
+    IN pDateVirement            DATE,
+    IN pCommentaire             VARCHAR(255),
+    IN pIdUtilisateurInitiateur INT,
+    IN pIdCategorie             INT,
+    IN pIdSousCategorie         INT
 )
 BEGIN
-    DECLARE vIdUtilisateurDebit  INT;
-    DECLARE vIdUtilisateurCredit INT;
-    DECLARE vIdVirement          INT;
-    DECLARE vInterUtilisateur    TINYINT(1) DEFAULT 0;
+    DECLARE vIdUtilisateurDebit     INT;
+    DECLARE vIdUtilisateurCredit    INT;
+    DECLARE vIdVirement             INT;
+    DECLARE vInterUtilisateur       TINYINT(1) DEFAULT 0;
+    DECLARE vIdUtilisateurCategorie INT;
+    DECLARE vIdCategorieDeScat      INT;
 
-    -- Récupérer les propriétaires des comptes
+    -- Propriétaires des comptes
     SELECT idUtilisateur INTO vIdUtilisateurDebit  FROM Compte WHERE idCompte = pIdCompteDebit;
     SELECT idUtilisateur INTO vIdUtilisateurCredit FROM Compte WHERE idCompte = pIdCompteCredit;
 
-    -- [SECURITE] L'initiateur doit posséder le compte débiteur
+    -- L'initiateur doit posséder le compte débiteur
     IF vIdUtilisateurDebit != pIdUtilisateurInitiateur THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Accès refusé : le compte débiteur n\'appartient pas à l\'utilisateur initiateur.';
     END IF;
 
-    -- [SECURITE] Détecter si c'est un virement inter-utilisateurs
+    -- Détection virement inter-utilisateurs
     IF vIdUtilisateurDebit != vIdUtilisateurCredit THEN
         SET vInterUtilisateur = 1;
-        -- Point d'extension : ajouter ici une vérification de consentement
-        -- (ex : vérifier une table DemandeVirement avec statut 'ACCEPTE')
+        -- Point d'extension : vérifier ici une table DemandeVirement avec statut 'ACCEPTE'
     END IF;
 
-    -- Créer l'enregistrement Virement
+    -- Vérification catégorie accessible à l'initiateur
+    IF pIdCategorie IS NOT NULL THEN
+        SELECT idUtilisateur INTO vIdUtilisateurCategorie
+        FROM Categorie WHERE idCategorie = pIdCategorie;
+
+        IF vIdUtilisateurCategorie IS NOT NULL
+            AND vIdUtilisateurCategorie != pIdUtilisateurInitiateur THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Accès refusé : la catégorie n\'appartient pas à l\'utilisateur initiateur.';
+        END IF;
+    END IF;
+
+    -- Vérification cohérence sous-catégorie / catégorie
+    IF pIdSousCategorie IS NOT NULL THEN
+        SELECT idcategorie INTO vIdCategorieDeScat
+        FROM SousCategorie WHERE idSousCategorie = pIdSousCategorie;
+
+        IF pIdCategorie IS NULL OR vIdCategorieDeScat != pIdCategorie THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Erreur : la sous-catégorie n\'appartient pas à la catégorie indiquée.';
+        END IF;
+    END IF;
+
+    -- Création du Virement
     INSERT INTO Virement (idCompteDebit, idCompteCredit, montant, dateVirement,
                           commentaire, idUtilisateurInitiateur, virementInterUtilisateur)
     VALUES (pIdCompteDebit, pIdCompteCredit, pMontant, pDateVirement,
@@ -241,26 +380,24 @@ BEGIN
 
     SET vIdVirement = LAST_INSERT_ID();
 
-    -- [NOUVEAU] Créer le mouvement DÉBIT sur le compte débiteur
+    -- Mouvement DÉBIT (compte source)
     INSERT INTO Mouvement (dateMouvement, idCompte, idCategorie, idSousCategorie,
                            idVirement, montant, typeMouvement)
     VALUES (pDateVirement, pIdCompteDebit, pIdCategorie, pIdSousCategorie,
             vIdVirement, pMontant, 'D');
 
-    -- [NOUVEAU] Créer le mouvement CRÉDIT sur le compte créditeur
+    -- Mouvement CRÉDIT (compte destination)
     INSERT INTO Mouvement (dateMouvement, idCompte, idCategorie, idSousCategorie,
                            idVirement, montant, typeMouvement)
     VALUES (pDateVirement, pIdCompteCredit, pIdCategorie, pIdSousCategorie,
             vIdVirement, pMontant, 'C');
+END$$
 
-END;
-
--- ============================================================
--- PROCÉDURE : getCategories
--- [NOUVEAU] Retourne les catégories visibles par un utilisateur :
--- catégories système (idUtilisateur IS NULL) + ses propres catégories.
--- ============================================================
-create procedure getCategories(IN pIdUtilisateur int)
+-- ------------------------------------------------------------
+-- getCategories : catégories visibles par un utilisateur donné
+-- (système partagées + ses propres)
+-- ------------------------------------------------------------
+CREATE PROCEDURE getCategories(IN pIdUtilisateur INT)
 BEGIN
     SELECT c.idCategorie,
            c.nomCategorie,
@@ -268,25 +405,26 @@ BEGIN
            sc.nomSousCategorie
     FROM Categorie c
              JOIN SousCategorie sc ON sc.idcategorie = c.idCategorie
-    WHERE c.idUtilisateur IS NULL        -- catégories système partagées
-       OR c.idUtilisateur = pIdUtilisateur  -- catégories propres à l'utilisateur
+    WHERE c.idUtilisateur IS NULL
+       OR c.idUtilisateur = pIdUtilisateur
     ORDER BY c.idCategorie, sc.idSousCategorie;
-END;
+END$$
 
--- ============================================================
--- PROCÉDURE : maj_mouvements (inchangée fonctionnellement)
--- ============================================================
-create procedure maj_mouvements()
+-- ------------------------------------------------------------
+-- maj_mouvements (inchangée fonctionnellement)
+-- ------------------------------------------------------------
+CREATE PROCEDURE maj_mouvements()
 BEGIN
     DECLARE v_idMouvement INT DEFAULT 0;
-    DECLARE v_montant DECIMAL(10,2) DEFAULT 0;
-    DECLARE v_delta DECIMAL(6,2) DEFAULT 0;
-    DECLARE v_done INT DEFAULT 0;
+    DECLARE v_montant     DECIMAL(10, 2) DEFAULT 0;
+    DECLARE v_delta       DECIMAL(6, 2)  DEFAULT 0;
+    DECLARE v_done        INT DEFAULT 0;
     DECLARE cur_mvt CURSOR FOR
         SELECT idMouvement, montant FROM Mouvement WHERE typeMouvement = 'D' AND idCategorie = 7;
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = 1;
+
     OPEN cur_mvt;
-    mvt_loop : LOOP
+    mvt_loop: LOOP
         FETCH cur_mvt INTO v_idMouvement, v_montant;
         IF v_done = 1 THEN
             LEAVE mvt_loop;
@@ -298,17 +436,28 @@ BEGIN
         UPDATE Mouvement SET montant = v_delta WHERE idMouvement = v_idMouvement;
     END LOOP;
     CLOSE cur_mvt;
-END;
+END$$
+
+DELIMITER ;
 
 -- ============================================================
--- FONCTION : soldeHistorique (inchangée)
+-- FONCTION
 -- ============================================================
-create function soldeHistorique(pIdCompte int, pDate date) returns decimal(7, 2) deterministic
+
+DELIMITER $$
+
+-- soldeHistorique : solde d'un compte à une date donnée
+CREATE FUNCTION soldeHistorique(pIdCompte INT, pDate DATE)
+    RETURNS DECIMAL(7, 2) DETERMINISTIC
 BEGIN
-    DECLARE vSolde decimal(7,2) DEFAULT 0;
-    SELECT sum(montant) INTO vSolde FROM Mouvement WHERE idCompte = pIdCompte AND dateMouvement <= pDate;
+    DECLARE vSolde DECIMAL(7, 2) DEFAULT 0;
+    SELECT SUM(montant) INTO vSolde
+    FROM Mouvement
+    WHERE idCompte = pIdCompte AND dateMouvement <= pDate;
     IF vSolde IS NULL THEN
         SET vSolde = 0;
     END IF;
-    return vSolde;
-END;
+    RETURN vSolde;
+END$$
+
+DELIMITER ;
