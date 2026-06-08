@@ -1,0 +1,2123 @@
+openapi: "3.0.3"
+
+info:
+  title: "Money 2026 API"
+  description: |
+    API REST de l'application Money 2026 — gestion de budget personnel multi-utilisateurs.
+    Renouveau de l'application Microsoft Money (années 1990/2000).
+    
+    ## Authentification
+    Toutes les routes (sauf /auth/login et /auth/register) nécessitent un token JWT Bearer.
+    
+    ## Conventions
+    - Les ressources sont nommées au pluriel
+    - Les dates sont au format ISO 8601 (YYYY-MM-DD)
+    - Les montants sont en euros (decimal)
+    - typeMouvement : D (Débit) ou C (Crédit)
+    - periode : M (Mensuel), H (Hebdomadaire), A (Aléatoire), Q (Quotidien)
+  version: "1.0.0"
+  contact:
+    name: "Équipe Arytech - IG2I Centrale Lille"
+
+servers:
+  - url: "http://localhost:3000/api/v1"
+    description: "Serveur de développement local"
+  - url: "https://api.money2026.fr/v1"
+    description: "Serveur de production"
+
+tags:
+  - name: Authentification
+    description: "Connexion, déconnexion et gestion des sessions"
+  - name: Utilisateurs
+    description: "Gestion des comptes utilisateurs"
+  - name: Comptes
+    description: "Comptes bancaires d'un utilisateur"
+  - name: Mouvements
+    description: "Transactions (débits et crédits) sur un compte"
+  - name: Virements
+    description: "Virements entre comptes (internes ou inter-utilisateurs)"
+  - name: Categories
+    description: "Catégories de dépenses/revenus"
+  - name: SousCategories
+    description: "Sous-catégories rattachées à une catégorie"
+  - name: Tiers
+    description: "Tiers associés aux mouvements (commerçants, personnes…)"
+
+# ============================================================
+# SÉCURITÉ GLOBALE
+# ============================================================
+
+security:
+  - bearerAuth: []
+
+# ============================================================
+# PATHS
+# ============================================================
+
+paths:
+
+  # ------------------------------------------------------------
+  # AUTHENTIFICATION
+  # ------------------------------------------------------------
+
+  /auth/register:
+    options:
+      tags: [Authentification]
+      summary: "Options CORS pour l'inscription"
+      security: []
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "POST, OPTIONS"
+
+    post:
+      tags: [Authentification]
+      summary: "Créer un compte utilisateur"
+      security: []
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UtilisateurCreation"
+            example:
+              nomUtilisateur: "Dupont"
+              prenomUtilisateur: "Alice"
+              login: "alice.dupont"
+              motDePasse: "MotDePasse123!"
+              ville: "Lille"
+              codePostal: "59000"
+      responses:
+        "201":
+          description: "Utilisateur créé"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Utilisateur"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /auth/login:
+    options:
+      tags: [Authentification]
+      summary: "Options CORS pour la connexion"
+      security: []
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "POST, OPTIONS"
+
+    post:
+      tags: [Authentification]
+      summary: "Se connecter et obtenir un token JWT"
+      security: []
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            example:
+              login: "alice.dupont"
+              motDePasse: "MotDePasse123!"
+      responses:
+        "200":
+          description: "Connexion réussie"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /auth/logout:
+    options:
+      tags: [Authentification]
+      summary: "Options CORS pour la déconnexion"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "POST, OPTIONS"
+
+    post:
+      tags: [Authentification]
+      summary: "Se déconnecter (invalider le token)"
+      operationId: logout
+      responses:
+        "204":
+          description: "Déconnexion réussie"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ------------------------------------------------------------
+  # UTILISATEURS
+  # ------------------------------------------------------------
+
+  /utilisateurs:
+    options:
+      tags: [Utilisateurs]
+      summary: "Options CORS pour la collection utilisateurs"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "GET, OPTIONS"
+
+    get:
+      tags: [Utilisateurs]
+      summary: "Lister tous les utilisateurs (admin uniquement)"
+      operationId: getUtilisateurs
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: "Liste des utilisateurs"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageUtilisateurs"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /utilisateurs/{idUtilisateur}:
+    options:
+      tags: [Utilisateurs]
+      summary: "Options CORS pour un utilisateur"
+      parameters:
+        - $ref: "#/components/parameters/idUtilisateur"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "GET, PUT, DELETE, OPTIONS"
+
+    get:
+      tags: [Utilisateurs]
+      summary: "Récupérer un utilisateur par son ID"
+      operationId: getUtilisateurById
+      parameters:
+        - $ref: "#/components/parameters/idUtilisateur"
+      responses:
+        "200":
+          description: "Utilisateur trouvé"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Utilisateur"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    put:
+      tags: [Utilisateurs]
+      summary: "Mettre à jour un utilisateur"
+      operationId: updateUtilisateur
+      parameters:
+        - $ref: "#/components/parameters/idUtilisateur"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UtilisateurMAJ"
+            example:
+              nomUtilisateur: "Dupont"
+              prenomUtilisateur: "Alice"
+              ville: "Paris"
+              codePostal: "75001"
+      responses:
+        "200":
+          description: "Utilisateur mis à jour"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Utilisateur"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      tags: [Utilisateurs]
+      summary: "Supprimer un utilisateur"
+      operationId: deleteUtilisateur
+      parameters:
+        - $ref: "#/components/parameters/idUtilisateur"
+      responses:
+        "204":
+          description: "Utilisateur supprimé"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ------------------------------------------------------------
+  # COMPTES
+  # ------------------------------------------------------------
+
+  /utilisateurs/{idUtilisateur}/comptes:
+    options:
+      tags: [Comptes]
+      summary: "Options CORS pour la collection comptes"
+      parameters:
+        - $ref: "#/components/parameters/idUtilisateur"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "GET, POST, OPTIONS"
+
+    get:
+      tags: [Comptes]
+      summary: "Lister les comptes d'un utilisateur"
+      operationId: getComptes
+      parameters:
+        - $ref: "#/components/parameters/idUtilisateur"
+      responses:
+        "200":
+          description: "Liste des comptes"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Compte"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      tags: [Comptes]
+      summary: "Créer un compte bancaire"
+      operationId: createCompte
+      parameters:
+        - $ref: "#/components/parameters/idUtilisateur"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompteCreation"
+            example:
+              descriptionCompte: "Compte courant principal"
+              nomBanque: "BNP Paribas"
+              montantInitial: 1500.00
+      responses:
+        "201":
+          description: "Compte créé"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Compte"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /comptes/{idCompte}:
+    options:
+      tags: [Comptes]
+      summary: "Options CORS pour un compte"
+      parameters:
+        - $ref: "#/components/parameters/idCompte"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "GET, PUT, DELETE, OPTIONS"
+
+    get:
+      tags: [Comptes]
+      summary: "Récupérer un compte par son ID"
+      operationId: getCompteById
+      parameters:
+        - $ref: "#/components/parameters/idCompte"
+      responses:
+        "200":
+          description: "Compte trouvé"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Compte"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    put:
+      tags: [Comptes]
+      summary: "Mettre à jour un compte"
+      operationId: updateCompte
+      parameters:
+        - $ref: "#/components/parameters/idCompte"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompteMAJ"
+            example:
+              descriptionCompte: "Compte courant BNP"
+              nomBanque: "BNP Paribas"
+      responses:
+        "200":
+          description: "Compte mis à jour"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Compte"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      tags: [Comptes]
+      summary: "Supprimer un compte"
+      operationId: deleteCompte
+      parameters:
+        - $ref: "#/components/parameters/idCompte"
+      responses:
+        "204":
+          description: "Compte supprimé"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /comptes/{idCompte}/solde:
+    options:
+      tags: [Comptes]
+      summary: "Options CORS pour le solde"
+      parameters:
+        - $ref: "#/components/parameters/idCompte"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "GET, OPTIONS"
+
+    get:
+      tags: [Comptes]
+      summary: "Obtenir le solde historique d'un compte à une date donnée"
+      operationId: getSoldeHistorique
+      parameters:
+        - $ref: "#/components/parameters/idCompte"
+        - name: date
+          in: query
+          required: false
+          description: "Date de calcul du solde (défaut : aujourd'hui)"
+          schema:
+            type: string
+            format: date
+            example: "2026-01-31"
+      responses:
+        "200":
+          description: "Solde calculé"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SoldeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ------------------------------------------------------------
+  # MOUVEMENTS
+  # ------------------------------------------------------------
+
+  /comptes/{idCompte}/mouvements:
+    options:
+      tags: [Mouvements]
+      summary: "Options CORS pour la collection mouvements"
+      parameters:
+        - $ref: "#/components/parameters/idCompte"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "GET, POST, OPTIONS"
+
+    get:
+      tags: [Mouvements]
+      summary: "Lister les mouvements d'un compte"
+      operationId: getMouvements
+      parameters:
+        - $ref: "#/components/parameters/idCompte"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - name: dateDebut
+          in: query
+          required: false
+          description: "Filtrer depuis cette date"
+          schema:
+            type: string
+            format: date
+            example: "2026-01-01"
+        - name: dateFin
+          in: query
+          required: false
+          description: "Filtrer jusqu'à cette date"
+          schema:
+            type: string
+            format: date
+            example: "2026-01-31"
+        - name: typeMouvement
+          in: query
+          required: false
+          description: "Filtrer par type (D=Débit, C=Crédit)"
+          schema:
+            type: string
+            enum: [D, C]
+        - name: idCategorie
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: "Liste des mouvements"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageMouvements"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      tags: [Mouvements]
+      summary: "Créer un mouvement sur un compte"
+      operationId: createMouvement
+      parameters:
+        - $ref: "#/components/parameters/idCompte"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MouvementCreation"
+            example:
+              dateMouvement: "2026-06-05"
+              idTiers: 3
+              idCategorie: 1
+              idSousCategorie: 2
+              montant: 45.90
+              typeMouvement: "D"
+      responses:
+        "201":
+          description: "Mouvement créé"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mouvement"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /mouvements/{idMouvement}:
+    options:
+      tags: [Mouvements]
+      summary: "Options CORS pour un mouvement"
+      parameters:
+        - $ref: "#/components/parameters/idMouvement"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "GET, PUT, DELETE, OPTIONS"
+
+    get:
+      tags: [Mouvements]
+      summary: "Récupérer un mouvement par son ID"
+      operationId: getMouvementById
+      parameters:
+        - $ref: "#/components/parameters/idMouvement"
+      responses:
+        "200":
+          description: "Mouvement trouvé"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MouvementDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    put:
+      tags: [Mouvements]
+      summary: "Mettre à jour un mouvement"
+      operationId: updateMouvement
+      parameters:
+        - $ref: "#/components/parameters/idMouvement"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MouvementMAJ"
+      responses:
+        "200":
+          description: "Mouvement mis à jour"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mouvement"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      tags: [Mouvements]
+      summary: "Supprimer un mouvement"
+      operationId: deleteMouvement
+      parameters:
+        - $ref: "#/components/parameters/idMouvement"
+      responses:
+        "204":
+          description: "Mouvement supprimé"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ------------------------------------------------------------
+  # VIREMENTS
+  # ------------------------------------------------------------
+
+  /virements:
+    options:
+      tags: [Virements]
+      summary: "Options CORS pour la collection virements"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "GET, POST, OPTIONS"
+
+    get:
+      tags: [Virements]
+      summary: "Lister les virements de l'utilisateur connecté"
+      operationId: getVirements
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - name: interUtilisateur
+          in: query
+          required: false
+          description: "Filtrer par type (true = inter-utilisateurs uniquement)"
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: "Liste des virements"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageVirements"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      tags: [Virements]
+      summary: "Créer un virement (interne ou inter-utilisateurs)"
+      description: |
+        Appelle la procédure stockée `creerVirement` en base.
+        Crée automatiquement les deux mouvements associés (débit + crédit).
+        Si les deux comptes appartiennent à des utilisateurs différents,
+        le flag virementInterUtilisateur est mis à 1.
+      operationId: createVirement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VirementCreation"
+            example:
+              idCompteDebit: 1
+              idCompteCredit: 3
+              montant: 200.00
+              dateVirement: "2026-06-05"
+              commentaire: "Remboursement dîner"
+              idCategorie: 2
+              idSousCategorie: 5
+      responses:
+        "201":
+          description: "Virement créé"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Virement"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /virements/{idVirement}:
+    options:
+      tags: [Virements]
+      summary: "Options CORS pour un virement"
+      parameters:
+        - $ref: "#/components/parameters/idVirement"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "GET, OPTIONS"
+
+    get:
+      tags: [Virements]
+      summary: "Récupérer un virement par son ID"
+      operationId: getVirementById
+      parameters:
+        - $ref: "#/components/parameters/idVirement"
+      responses:
+        "200":
+          description: "Virement trouvé"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Virement"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ------------------------------------------------------------
+  # CATEGORIES
+  # ------------------------------------------------------------
+
+  /categories:
+    options:
+      tags: [Categories]
+      summary: "Options CORS pour la collection catégories"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "GET, POST, OPTIONS"
+
+    get:
+      tags: [Categories]
+      summary: "Lister les catégories accessibles (système + propres)"
+      description: |
+        Retourne les catégories système (idUtilisateur NULL)
+        et les catégories créées par l'utilisateur connecté.
+        Correspond à la procédure stockée `getCategories`.
+      operationId: getCategories
+      responses:
+        "200":
+          description: "Liste des catégories avec leurs sous-catégories"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategorieAvecSousCategories"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      tags: [Categories]
+      summary: "Créer une catégorie personnalisée"
+      operationId: createCategorie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategorieCreation"
+            example:
+              nomCategorie: "Santé"
+      responses:
+        "201":
+          description: "Catégorie créée"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Categorie"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /categories/{idCategorie}:
+    options:
+      tags: [Categories]
+      summary: "Options CORS pour une catégorie"
+      parameters:
+        - $ref: "#/components/parameters/idCategorie"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "GET, PUT, DELETE, OPTIONS"
+
+    get:
+      tags: [Categories]
+      summary: "Récupérer une catégorie par son ID"
+      operationId: getCategorieById
+      parameters:
+        - $ref: "#/components/parameters/idCategorie"
+      responses:
+        "200":
+          description: "Catégorie trouvée"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategorieAvecSousCategories"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    put:
+      tags: [Categories]
+      summary: "Mettre à jour une catégorie"
+      operationId: updateCategorie
+      parameters:
+        - $ref: "#/components/parameters/idCategorie"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategorieCreation"
+            example:
+              nomCategorie: "Santé & Bien-être"
+      responses:
+        "200":
+          description: "Catégorie mise à jour"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Categorie"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      tags: [Categories]
+      summary: "Supprimer une catégorie"
+      operationId: deleteCategorie
+      parameters:
+        - $ref: "#/components/parameters/idCategorie"
+      responses:
+        "204":
+          description: "Catégorie supprimée"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ------------------------------------------------------------
+  # SOUS-CATEGORIES
+  # ------------------------------------------------------------
+
+  /categories/{idCategorie}/sous-categories:
+    options:
+      tags: [SousCategories]
+      summary: "Options CORS pour la collection sous-catégories"
+      parameters:
+        - $ref: "#/components/parameters/idCategorie"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "GET, POST, OPTIONS"
+
+    get:
+      tags: [SousCategories]
+      summary: "Lister les sous-catégories d'une catégorie"
+      operationId: getSousCategories
+      parameters:
+        - $ref: "#/components/parameters/idCategorie"
+      responses:
+        "200":
+          description: "Liste des sous-catégories"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SousCategorie"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      tags: [SousCategories]
+      summary: "Créer une sous-catégorie"
+      operationId: createSousCategorie
+      parameters:
+        - $ref: "#/components/parameters/idCategorie"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SousCategorieCreation"
+            example:
+              nomSousCategorie: "Pharmacie"
+              montant_base: 50
+              periode: "M"
+      responses:
+        "201":
+          description: "Sous-catégorie créée"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SousCategorie"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /sous-categories/{idSousCategorie}:
+    options:
+      tags: [SousCategories]
+      summary: "Options CORS pour une sous-catégorie"
+      parameters:
+        - $ref: "#/components/parameters/idSousCategorie"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "GET, PUT, DELETE, OPTIONS"
+
+    get:
+      tags: [SousCategories]
+      summary: "Récupérer une sous-catégorie par son ID"
+      operationId: getSousCategorieById
+      parameters:
+        - $ref: "#/components/parameters/idSousCategorie"
+      responses:
+        "200":
+          description: "Sous-catégorie trouvée"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SousCategorie"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    put:
+      tags: [SousCategories]
+      summary: "Mettre à jour une sous-catégorie"
+      operationId: updateSousCategorie
+      parameters:
+        - $ref: "#/components/parameters/idSousCategorie"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SousCategorieCreation"
+            example:
+              nomSousCategorie: "Pharmacie & Médecin"
+              montant_base: 80
+              periode: "M"
+      responses:
+        "200":
+          description: "Sous-catégorie mise à jour"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SousCategorie"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      tags: [SousCategories]
+      summary: "Supprimer une sous-catégorie"
+      operationId: deleteSousCategorie
+      parameters:
+        - $ref: "#/components/parameters/idSousCategorie"
+      responses:
+        "204":
+          description: "Sous-catégorie supprimée"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # ------------------------------------------------------------
+  # TIERS
+  # ------------------------------------------------------------
+
+  /tiers:
+    options:
+      tags: [Tiers]
+      summary: "Options CORS pour la collection tiers"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "GET, POST, OPTIONS"
+
+    get:
+      tags: [Tiers]
+      summary: "Lister les tiers de l'utilisateur connecté"
+      operationId: getTiers
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - name: search
+          in: query
+          required: false
+          description: "Rechercher par nom de tiers"
+          schema:
+            type: string
+            example: "Carrefour"
+      responses:
+        "200":
+          description: "Liste des tiers"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageTiers"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      tags: [Tiers]
+      summary: "Créer un tiers"
+      operationId: createTiers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TiersCreation"
+            example:
+              nomTiers: "Carrefour City"
+              idSousCategorieDefaut: 2
+      responses:
+        "201":
+          description: "Tiers créé"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tiers"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /tiers/{idTiers}:
+    options:
+      tags: [Tiers]
+      summary: "Options CORS pour un tiers"
+      parameters:
+        - $ref: "#/components/parameters/idTiers"
+      responses:
+        "204":
+          description: "Options disponibles"
+          headers:
+            Allow:
+              schema:
+                type: string
+                example: "GET, PUT, DELETE, OPTIONS"
+
+    get:
+      tags: [Tiers]
+      summary: "Récupérer un tiers par son ID"
+      operationId: getTiersById
+      parameters:
+        - $ref: "#/components/parameters/idTiers"
+      responses:
+        "200":
+          description: "Tiers trouvé"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tiers"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    put:
+      tags: [Tiers]
+      summary: "Mettre à jour un tiers"
+      operationId: updateTiers
+      parameters:
+        - $ref: "#/components/parameters/idTiers"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TiersCreation"
+            example:
+              nomTiers: "Carrefour Market"
+              idSousCategorieDefaut: 2
+      responses:
+        "200":
+          description: "Tiers mis à jour"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tiers"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      tags: [Tiers]
+      summary: "Supprimer un tiers"
+      operationId: deleteTiers
+      parameters:
+        - $ref: "#/components/parameters/idTiers"
+      responses:
+        "204":
+          description: "Tiers supprimé"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+# ============================================================
+# COMPONENTS
+# ============================================================
+
+components:
+
+  # ------------------------------------------------------------
+  # SECURITY SCHEMES
+  # ------------------------------------------------------------
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Token JWT obtenu via POST /auth/login"
+
+  # ------------------------------------------------------------
+  # PARAMETERS RÉUTILISABLES
+  # ------------------------------------------------------------
+
+  parameters:
+    idUtilisateur:
+      name: idUtilisateur
+      in: path
+      required: true
+      description: "Identifiant de l'utilisateur"
+      schema:
+        type: integer
+        example: 1
+
+    idCompte:
+      name: idCompte
+      in: path
+      required: true
+      description: "Identifiant du compte bancaire"
+      schema:
+        type: integer
+        example: 1
+
+    idMouvement:
+      name: idMouvement
+      in: path
+      required: true
+      description: "Identifiant du mouvement"
+      schema:
+        type: integer
+        example: 1
+
+    idVirement:
+      name: idVirement
+      in: path
+      required: true
+      description: "Identifiant du virement"
+      schema:
+        type: integer
+        example: 1
+
+    idCategorie:
+      name: idCategorie
+      in: path
+      required: true
+      description: "Identifiant de la catégorie"
+      schema:
+        type: integer
+        example: 1
+
+    idSousCategorie:
+      name: idSousCategorie
+      in: path
+      required: true
+      description: "Identifiant de la sous-catégorie"
+      schema:
+        type: integer
+        example: 1
+
+    idTiers:
+      name: idTiers
+      in: path
+      required: true
+      description: "Identifiant du tiers"
+      schema:
+        type: integer
+        example: 1
+
+    page:
+      name: page
+      in: query
+      required: false
+      description: "Numéro de page (commence à 1)"
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+        example: 1
+
+    limit:
+      name: limit
+      in: query
+      required: false
+      description: "Nombre d'éléments par page"
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+        example: 20
+
+  # ------------------------------------------------------------
+  # SCHEMAS
+  # ------------------------------------------------------------
+
+  schemas:
+
+    # -- UTILISATEUR --
+
+    Utilisateur:
+      type: object
+      properties:
+        idUtilisateur:
+          type: integer
+          example: 1
+        nomUtilisateur:
+          type: string
+          example: "Dupont"
+        prenomUtilisateur:
+          type: string
+          example: "Alice"
+        login:
+          type: string
+          example: "alice.dupont"
+        ville:
+          type: string
+          nullable: true
+          example: "Lille"
+        codePostal:
+          type: string
+          nullable: true
+          maxLength: 5
+          example: "59000"
+        dateHeureCreation:
+          type: string
+          format: date-time
+          example: "2026-01-15T10:30:00Z"
+        dateHeureMAJ:
+          type: string
+          format: date-time
+          example: "2026-06-01T08:00:00Z"
+
+    UtilisateurCreation:
+      type: object
+      required: [nomUtilisateur, prenomUtilisateur, login, motDePasse]
+      properties:
+        nomUtilisateur:
+          type: string
+          maxLength: 50
+          example: "Dupont"
+        prenomUtilisateur:
+          type: string
+          maxLength: 50
+          example: "Alice"
+        login:
+          type: string
+          maxLength: 50
+          example: "alice.dupont"
+        motDePasse:
+          type: string
+          minLength: 8
+          example: "MotDePasse123!"
+        ville:
+          type: string
+          maxLength: 50
+          nullable: true
+          example: "Lille"
+        codePostal:
+          type: string
+          maxLength: 5
+          nullable: true
+          example: "59000"
+
+    UtilisateurMAJ:
+      type: object
+      properties:
+        nomUtilisateur:
+          type: string
+          maxLength: 50
+          example: "Dupont"
+        prenomUtilisateur:
+          type: string
+          maxLength: 50
+          example: "Alice"
+        ville:
+          type: string
+          maxLength: 50
+          nullable: true
+          example: "Paris"
+        codePostal:
+          type: string
+          maxLength: 5
+          nullable: true
+          example: "75001"
+
+    # -- AUTH --
+
+    LoginRequest:
+      type: object
+      required: [login, motDePasse]
+      properties:
+        login:
+          type: string
+          example: "alice.dupont"
+        motDePasse:
+          type: string
+          example: "MotDePasse123!"
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: "Token JWT à utiliser dans le header Authorization"
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        utilisateur:
+          $ref: "#/components/schemas/Utilisateur"
+
+    # -- COMPTE --
+
+    Compte:
+      type: object
+      properties:
+        idCompte:
+          type: integer
+          example: 1
+        descriptionCompte:
+          type: string
+          example: "Compte courant principal"
+        nomBanque:
+          type: string
+          example: "BNP Paribas"
+        idUtilisateur:
+          type: integer
+          example: 1
+        montantInitial:
+          type: number
+          format: float
+          example: 1500.00
+        dernierMontantCalcule:
+          type: number
+          format: float
+          example: 2340.50
+        dateHeureCreation:
+          type: string
+          format: date-time
+          example: "2026-01-15T10:30:00Z"
+        dateHeureMAJ:
+          type: string
+          format: date-time
+          example: "2026-06-01T08:00:00Z"
+
+    CompteCreation:
+      type: object
+      required: [descriptionCompte, nomBanque]
+      properties:
+        descriptionCompte:
+          type: string
+          maxLength: 50
+          example: "Compte courant principal"
+        nomBanque:
+          type: string
+          maxLength: 50
+          example: "BNP Paribas"
+        montantInitial:
+          type: number
+          format: float
+          default: 0.00
+          example: 1500.00
+
+    CompteMAJ:
+      type: object
+      properties:
+        descriptionCompte:
+          type: string
+          maxLength: 50
+          example: "Compte courant BNP"
+        nomBanque:
+          type: string
+          maxLength: 50
+          example: "BNP Paribas"
+
+    SoldeResponse:
+      type: object
+      properties:
+        idCompte:
+          type: integer
+          example: 1
+        date:
+          type: string
+          format: date
+          example: "2026-01-31"
+        solde:
+          type: number
+          format: float
+          example: 2340.50
+
+    # -- MOUVEMENT --
+
+    Mouvement:
+      type: object
+      properties:
+        idMouvement:
+          type: integer
+          example: 42
+        dateMouvement:
+          type: string
+          format: date
+          example: "2026-06-05"
+        idCompte:
+          type: integer
+          example: 1
+        idTiers:
+          type: integer
+          nullable: true
+          example: 3
+        idCategorie:
+          type: integer
+          nullable: true
+          example: 1
+        idSousCategorie:
+          type: integer
+          nullable: true
+          example: 2
+        idVirement:
+          type: integer
+          nullable: true
+          example: null
+        montant:
+          type: number
+          format: float
+          example: 45.90
+        typeMouvement:
+          type: string
+          enum: [D, C]
+          example: "D"
+        dateHeureCreation:
+          type: string
+          format: date-time
+          example: "2026-06-05T14:22:00Z"
+        dateHeureMAJ:
+          type: string
+          format: date-time
+          example: "2026-06-05T14:22:00Z"
+
+    MouvementDetail:
+      description: "Mouvement enrichi avec les noms (correspond à la vue V_MOUVEMENT)"
+      type: object
+      properties:
+        idMouvement:
+          type: integer
+          example: 42
+        dateMouvement:
+          type: string
+          format: date
+          example: "2026-06-05"
+        descriptionCompte:
+          type: string
+          example: "Compte courant principal"
+        nomBanque:
+          type: string
+          example: "BNP Paribas"
+        nomTiers:
+          type: string
+          nullable: true
+          example: "Carrefour City"
+        idCategorie:
+          type: integer
+          nullable: true
+          example: 1
+        nomCategorie:
+          type: string
+          nullable: true
+          example: "Alimentation"
+        idSousCategorie:
+          type: integer
+          nullable: true
+          example: 2
+        nomSousCategorie:
+          type: string
+          nullable: true
+          example: "Courses"
+        montant:
+          type: number
+          format: float
+          example: 45.90
+        typeMouvement:
+          type: string
+          enum: [D, C]
+          example: "D"
+
+    MouvementCreation:
+      type: object
+      required: [montant, typeMouvement]
+      properties:
+        dateMouvement:
+          type: string
+          format: date
+          example: "2026-06-05"
+        idTiers:
+          type: integer
+          nullable: true
+          example: 3
+        idCategorie:
+          type: integer
+          nullable: true
+          example: 1
+        idSousCategorie:
+          type: integer
+          nullable: true
+          example: 2
+        montant:
+          type: number
+          format: float
+          minimum: 0.01
+          example: 45.90
+        typeMouvement:
+          type: string
+          enum: [D, C]
+          example: "D"
+
+    MouvementMAJ:
+      type: object
+      properties:
+        dateMouvement:
+          type: string
+          format: date
+          example: "2026-06-05"
+        idTiers:
+          type: integer
+          nullable: true
+          example: 3
+        idCategorie:
+          type: integer
+          nullable: true
+          example: 1
+        idSousCategorie:
+          type: integer
+          nullable: true
+          example: 2
+        montant:
+          type: number
+          format: float
+          minimum: 0.01
+          example: 45.90
+        typeMouvement:
+          type: string
+          enum: [D, C]
+          example: "D"
+
+    # -- VIREMENT --
+
+    Virement:
+      type: object
+      properties:
+        idVirement:
+          type: integer
+          example: 1
+        idCompteDebit:
+          type: integer
+          example: 1
+        idCompteCredit:
+          type: integer
+          example: 3
+        montant:
+          type: number
+          format: float
+          example: 200.00
+        dateVirement:
+          type: string
+          format: date
+          example: "2026-06-05"
+        commentaire:
+          type: string
+          nullable: true
+          example: "Remboursement dîner"
+        idUtilisateurInitiateur:
+          type: integer
+          example: 1
+        virementInterUtilisateur:
+          type: boolean
+          example: false
+        dateHeureCreation:
+          type: string
+          format: date-time
+          example: "2026-06-05T14:22:00Z"
+
+    VirementCreation:
+      type: object
+      required: [idCompteDebit, idCompteCredit, montant]
+      properties:
+        idCompteDebit:
+          type: integer
+          example: 1
+        idCompteCredit:
+          type: integer
+          example: 3
+        montant:
+          type: number
+          format: float
+          minimum: 0.01
+          example: 200.00
+        dateVirement:
+          type: string
+          format: date
+          example: "2026-06-05"
+        commentaire:
+          type: string
+          maxLength: 255
+          nullable: true
+          example: "Remboursement dîner"
+        idCategorie:
+          type: integer
+          nullable: true
+          example: 2
+        idSousCategorie:
+          type: integer
+          nullable: true
+          example: 5
+
+    # -- CATEGORIE --
+
+    Categorie:
+      type: object
+      properties:
+        idCategorie:
+          type: integer
+          example: 1
+        nomCategorie:
+          type: string
+          example: "Alimentation"
+        idUtilisateur:
+          type: integer
+          nullable: true
+          description: "NULL si catégorie système partagée"
+          example: null
+        dateHeureCreation:
+          type: string
+          format: date-time
+          example: "2026-01-15T10:30:00Z"
+
+    CategorieCreation:
+      type: object
+      required: [nomCategorie]
+      properties:
+        nomCategorie:
+          type: string
+          maxLength: 50
+          example: "Santé"
+
+    CategorieAvecSousCategories:
+      type: object
+      properties:
+        idCategorie:
+          type: integer
+          example: 1
+        nomCategorie:
+          type: string
+          example: "Alimentation"
+        idUtilisateur:
+          type: integer
+          nullable: true
+          example: null
+        sousCategories:
+          type: array
+          items:
+            $ref: "#/components/schemas/SousCategorie"
+
+    # -- SOUS-CATEGORIE --
+
+    SousCategorie:
+      type: object
+      properties:
+        idSousCategorie:
+          type: integer
+          example: 2
+        nomSousCategorie:
+          type: string
+          example: "Courses"
+        idCategorie:
+          type: integer
+          example: 1
+        montant_base:
+          type: integer
+          nullable: true
+          description: "Budget prévisionnel de base"
+          example: 200
+        periode:
+          type: string
+          enum: [M, H, A, Q]
+          description: "M=Mensuel, H=Hebdomadaire, A=Aléatoire, Q=Quotidien"
+          example: "M"
+        dateHeureCreation:
+          type: string
+          format: date-time
+          example: "2026-01-15T10:30:00Z"
+
+    SousCategorieCreation:
+      type: object
+      required: [nomSousCategorie]
+      properties:
+        nomSousCategorie:
+          type: string
+          maxLength: 50
+          example: "Pharmacie"
+        montant_base:
+          type: integer
+          nullable: true
+          example: 50
+        periode:
+          type: string
+          enum: [M, H, A, Q]
+          default: "M"
+          example: "M"
+
+    # -- TIERS --
+
+    Tiers:
+      type: object
+      properties:
+        idTiers:
+          type: integer
+          example: 3
+        nomTiers:
+          type: string
+          example: "Carrefour City"
+        idUtilisateur:
+          type: integer
+          example: 1
+        idSousCategorieDefaut:
+          type: integer
+          nullable: true
+          example: 2
+        dateHeureCreation:
+          type: string
+          format: date-time
+          example: "2026-01-15T10:30:00Z"
+
+    TiersCreation:
+      type: object
+      required: [nomTiers]
+      properties:
+        nomTiers:
+          type: string
+          maxLength: 50
+          example: "Carrefour City"
+        idSousCategorieDefaut:
+          type: integer
+          nullable: true
+          example: 2
+
+    # -- PAGINATION --
+
+    PageUtilisateurs:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Utilisateur"
+        meta:
+          $ref: "#/components/schemas/PaginationMeta"
+
+    PageMouvements:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/MouvementDetail"
+        meta:
+          $ref: "#/components/schemas/PaginationMeta"
+
+    PageVirements:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Virement"
+        meta:
+          $ref: "#/components/schemas/PaginationMeta"
+
+    PageTiers:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tiers"
+        meta:
+          $ref: "#/components/schemas/PaginationMeta"
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 87
+        totalPages:
+          type: integer
+          example: 5
+
+    # -- ERREURS --
+
+    Erreur:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 404
+        message:
+          type: string
+          example: "Ressource non trouvée"
+        details:
+          type: string
+          nullable: true
+          example: "Aucun compte trouvé avec l'ID 99"
+
+  # ------------------------------------------------------------
+  # RESPONSES RÉUTILISABLES
+  # ------------------------------------------------------------
+
+  responses:
+    BadRequest:
+      description: "Requête invalide — paramètres manquants ou malformés"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Erreur"
+          example:
+            code: 400
+            message: "Requête invalide"
+            details: "Le champ 'montant' est obligatoire"
+
+    Unauthorized:
+      description: "Non authentifié — token JWT manquant ou invalide"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Erreur"
+          example:
+            code: 401
+            message: "Non authentifié"
+            details: "Token JWT manquant ou expiré"
+
+    Forbidden:
+      description: "Accès refusé — vous n'avez pas les droits sur cette ressource"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Erreur"
+          example:
+            code: 403
+            message: "Accès refusé"
+            details: "Cette ressource ne vous appartient pas"
+
+    NotFound:
+      description: "Ressource non trouvée"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Erreur"
+          example:
+            code: 404
+            message: "Ressource non trouvée"
+            details: "Aucun compte trouvé avec l'ID 99"
+
+    Conflict:
+      description: "Conflit — la ressource existe déjà"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Erreur"
+          example:
+            code: 409
+            message: "Conflit"
+            details: "Un utilisateur avec ce login existe déjà"
+
+    UnprocessableEntity:
+      description: "Entité non traitable — erreur métier (ex: trigger de sécurité SQL)"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Erreur"
+          example:
+            code: 422
+            message: "Erreur métier"
+            details: "La sous-catégorie n'appartient pas à la catégorie indiquée"
+
+    InternalError:
+      description: "Erreur interne du serveur"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Erreur"
+          example:
+            code: 500
+            message: "Erreur interne"
+            details: "Une erreur inattendue s'est produite"
