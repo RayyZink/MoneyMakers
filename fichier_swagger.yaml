@@ -393,6 +393,45 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Virements]
+      summary: "Modifier un virement"
+      operationId: updateVirement
+      parameters:
+        - name: idVirement
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VirementCreation" }
+      responses:
+        "200":
+          description: "Virement mis à jour"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Virement" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+    delete:
+      tags: [Virements]
+      summary: "Supprimer un virement"
+      operationId: deleteVirement
+      parameters:
+        - name: idVirement
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: "Virement supprimé" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
 
   /categories:
     get:
