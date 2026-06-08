@@ -5,10 +5,9 @@ info:
   description: |
     API REST multi-utilisateurs de gestion de budget personnel.
     JWT Bearer requis sur toutes les routes sauf /auth/login et /auth/register.
-    Les ressources non documentées ici (Tiers, Catégories, SousCategories) suivent le même pattern REST.
   version: "1.0.0"
   contact:
-    name: "Équipe Arytech - IG2I Centrale Lille"
+    name: "Les Money Makers"
 
 servers:
   - url: "http://localhost:3000/api/v1"
@@ -20,6 +19,9 @@ tags:
   - name: Comptes
   - name: Mouvements
   - name: Virements
+  - name: Categories
+  - name: SousCategories
+  - name: Tiers
 
 security:
   - bearerAuth: []
@@ -27,12 +29,6 @@ security:
 paths:
 
   /auth/register:
-    options:
-      tags: [Auth]
-      summary: "OPTIONS"
-      security: []
-      responses:
-        "204": { description: "Allow: POST, OPTIONS" }
     post:
       tags: [Auth]
       summary: "Créer un compte utilisateur"
@@ -56,10 +52,14 @@ paths:
   /auth/login:
     options:
       tags: [Auth]
-      summary: "OPTIONS"
+      summary: "OPTIONS — illustre le mécanisme CORS preflight"
       security: []
       responses:
-        "204": { description: "Allow: POST, OPTIONS" }
+        "204":
+          description: "Allow: POST, OPTIONS"
+          headers:
+            Allow:
+              schema: { type: string, example: "POST, OPTIONS" }
     post:
       tags: [Auth]
       summary: "Se connecter — retourne un token JWT"
@@ -80,11 +80,6 @@ paths:
         "500": { $ref: "#/components/responses/InternalError" }
 
   /auth/logout:
-    options:
-      tags: [Auth]
-      summary: "OPTIONS"
-      responses:
-        "204": { description: "Allow: POST, OPTIONS" }
     post:
       tags: [Auth]
       summary: "Se déconnecter"
@@ -94,13 +89,6 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
 
   /utilisateurs/{idUtilisateur}:
-    options:
-      tags: [Utilisateurs]
-      summary: "OPTIONS"
-      parameters:
-        - $ref: "#/components/parameters/idUtilisateur"
-      responses:
-        "204": { description: "Allow: GET, PUT, OPTIONS" }
     get:
       tags: [Utilisateurs]
       summary: "Récupérer son profil"
@@ -138,13 +126,6 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
 
   /utilisateurs/{idUtilisateur}/comptes:
-    options:
-      tags: [Comptes]
-      summary: "OPTIONS"
-      parameters:
-        - $ref: "#/components/parameters/idUtilisateur"
-      responses:
-        "204": { description: "Allow: GET, POST, OPTIONS" }
     get:
       tags: [Comptes]
       summary: "Lister ses comptes"
@@ -184,11 +165,15 @@ paths:
   /comptes/{idCompte}:
     options:
       tags: [Comptes]
-      summary: "OPTIONS"
+      summary: "OPTIONS — découverte des méthodes disponibles"
       parameters:
         - $ref: "#/components/parameters/idCompte"
       responses:
-        "204": { description: "Allow: GET, PUT, DELETE, OPTIONS" }
+        "204":
+          description: "Allow: GET, PUT, DELETE, OPTIONS"
+          headers:
+            Allow:
+              schema: { type: string, example: "GET, PUT, DELETE, OPTIONS" }
     get:
       tags: [Comptes]
       summary: "Récupérer un compte"
@@ -238,13 +223,6 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
 
   /comptes/{idCompte}/solde:
-    options:
-      tags: [Comptes]
-      summary: "OPTIONS"
-      parameters:
-        - $ref: "#/components/parameters/idCompte"
-      responses:
-        "204": { description: "Allow: GET, OPTIONS" }
     get:
       tags: [Comptes]
       summary: "Solde historique à une date donnée"
@@ -265,13 +243,6 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
 
   /comptes/{idCompte}/mouvements:
-    options:
-      tags: [Mouvements]
-      summary: "OPTIONS"
-      parameters:
-        - $ref: "#/components/parameters/idCompte"
-      responses:
-        "204": { description: "Allow: GET, POST, OPTIONS" }
     get:
       tags: [Mouvements]
       summary: "Lister les mouvements d'un compte"
@@ -322,26 +293,50 @@ paths:
   /mouvements/{idMouvement}:
     options:
       tags: [Mouvements]
-      summary: "OPTIONS"
+      summary: "OPTIONS — exemple sur une ressource document"
       parameters:
         - $ref: "#/components/parameters/idMouvement"
       responses:
-        "204": { description: "Allow: GET, PUT, DELETE, OPTIONS" }
+        "204":
+          description: "Allow: GET, PUT, DELETE, OPTIONS"
+          headers:
+            Allow:
+              schema: { type: string, example: "GET, PUT, DELETE, OPTIONS" }
     get:
       tags: [Mouvements]
-      summary: "Récupérer un mouvement"
+      summary: "Récupérer un mouvement (vue V_MOUVEMENT)"
       operationId: getMouvementById
       parameters:
         - $ref: "#/components/parameters/idMouvement"
       responses:
         "200":
-          description: "Mouvement enrichi (vue V_MOUVEMENT)"
+          description: "Mouvement enrichi"
           content:
             application/json:
               schema: { $ref: "#/components/schemas/MouvementDetail" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Mouvements]
+      summary: "Modifier un mouvement"
+      operationId: updateMouvement
+      parameters:
+        - $ref: "#/components/parameters/idMouvement"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MouvementCreation" }
+      responses:
+        "200":
+          description: "Mouvement mis à jour"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Mouvement" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
     delete:
       tags: [Mouvements]
       summary: "Supprimer un mouvement"
@@ -355,17 +350,13 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
 
   /virements:
-    options:
-      tags: [Virements]
-      summary: "OPTIONS"
-      responses:
-        "204": { description: "Allow: GET, POST, OPTIONS" }
     post:
       tags: [Virements]
-      summary: "Créer un virement (appelle la procédure creerVirement)"
+      summary: "Créer un virement"
       description: |
-        Crée automatiquement les 2 mouvements (débit + crédit).
-        Si les comptes appartiennent à 2 utilisateurs différents → virementInterUtilisateur = true.
+        Appelle la procédure stockée creerVirement.
+        Génère automatiquement 2 mouvements (débit + crédit).
+        Si comptes de 2 utilisateurs différents → virementInterUtilisateur = true.
       operationId: createVirement
       requestBody:
         required: true
@@ -383,9 +374,278 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
 
-# ============================================================
-# COMPONENTS
-# ============================================================
+  /virements/{idVirement}:
+    get:
+      tags: [Virements]
+      summary: "Récupérer un virement"
+      operationId: getVirementById
+      parameters:
+        - name: idVirement
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: "Virement trouvé"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Virement" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /categories:
+    get:
+      tags: [Categories]
+      summary: "Lister les catégories (système + personnelles)"
+      operationId: getCategories
+      responses:
+        "200":
+          description: "Liste des catégories avec sous-catégories"
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CategorieAvecSousCategories" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Categories]
+      summary: "Créer une catégorie"
+      operationId: createCategorie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategorieCreation" }
+      responses:
+        "201":
+          description: "Catégorie créée"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Categorie" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /categories/{idCategorie}:
+    get:
+      tags: [Categories]
+      summary: "Récupérer une catégorie"
+      operationId: getCategorieById
+      parameters:
+        - $ref: "#/components/parameters/idCategorie"
+      responses:
+        "200":
+          description: "Catégorie trouvée"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CategorieAvecSousCategories" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Categories]
+      summary: "Modifier une catégorie"
+      operationId: updateCategorie
+      parameters:
+        - $ref: "#/components/parameters/idCategorie"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategorieCreation" }
+      responses:
+        "200":
+          description: "Catégorie mise à jour"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Categorie" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Categories]
+      summary: "Supprimer une catégorie"
+      operationId: deleteCategorie
+      parameters:
+        - $ref: "#/components/parameters/idCategorie"
+      responses:
+        "204": { description: "Catégorie supprimée" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /categories/{idCategorie}/sous-categories:
+    get:
+      tags: [SousCategories]
+      summary: "Lister les sous-catégories"
+      operationId: getSousCategories
+      parameters:
+        - $ref: "#/components/parameters/idCategorie"
+      responses:
+        "200":
+          description: "Liste des sous-catégories"
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SousCategorie" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [SousCategories]
+      summary: "Créer une sous-catégorie"
+      operationId: createSousCategorie
+      parameters:
+        - $ref: "#/components/parameters/idCategorie"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SousCategorieCreation" }
+      responses:
+        "201":
+          description: "Sous-catégorie créée"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SousCategorie" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /sous-categories/{idSousCategorie}:
+    get:
+      tags: [SousCategories]
+      summary: "Récupérer une sous-catégorie"
+      operationId: getSousCategorieById
+      parameters:
+        - $ref: "#/components/parameters/idSousCategorie"
+      responses:
+        "200":
+          description: "Sous-catégorie trouvée"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SousCategorie" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [SousCategories]
+      summary: "Modifier une sous-catégorie"
+      operationId: updateSousCategorie
+      parameters:
+        - $ref: "#/components/parameters/idSousCategorie"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SousCategorieCreation" }
+      responses:
+        "200":
+          description: "Sous-catégorie mise à jour"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SousCategorie" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [SousCategories]
+      summary: "Supprimer une sous-catégorie"
+      operationId: deleteSousCategorie
+      parameters:
+        - $ref: "#/components/parameters/idSousCategorie"
+      responses:
+        "204": { description: "Sous-catégorie supprimée" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /tiers:
+    get:
+      tags: [Tiers]
+      summary: "Lister ses tiers"
+      operationId: getTiers
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - name: search
+          in: query
+          schema: { type: string, example: "Carrefour" }
+      responses:
+        "200":
+          description: "Liste des tiers"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PageTiers" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Tiers]
+      summary: "Créer un tiers"
+      operationId: createTiers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TiersCreation" }
+      responses:
+        "201":
+          description: "Tiers créé"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tiers" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /tiers/{idTiers}:
+    get:
+      tags: [Tiers]
+      summary: "Récupérer un tiers"
+      operationId: getTiersById
+      parameters:
+        - $ref: "#/components/parameters/idTiers"
+      responses:
+        "200":
+          description: "Tiers trouvé"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tiers" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Tiers]
+      summary: "Modifier un tiers"
+      operationId: updateTiers
+      parameters:
+        - $ref: "#/components/parameters/idTiers"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TiersCreation" }
+      responses:
+        "200":
+          description: "Tiers mis à jour"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tiers" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Tiers]
+      summary: "Supprimer un tiers"
+      operationId: deleteTiers
+      parameters:
+        - $ref: "#/components/parameters/idTiers"
+      responses:
+        "204": { description: "Tiers supprimé" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
 components:
 
   securitySchemes:
@@ -393,6 +653,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: "Token JWT obtenu via POST /auth/login"
 
   parameters:
     idUtilisateur:
@@ -407,6 +668,21 @@ components:
       schema: { type: integer, example: 1 }
     idMouvement:
       name: idMouvement
+      in: path
+      required: true
+      schema: { type: integer, example: 1 }
+    idCategorie:
+      name: idCategorie
+      in: path
+      required: true
+      schema: { type: integer, example: 1 }
+    idSousCategorie:
+      name: idSousCategorie
+      in: path
+      required: true
+      schema: { type: integer, example: 1 }
+    idTiers:
+      name: idTiers
       in: path
       required: true
       schema: { type: integer, example: 1 }
@@ -429,7 +705,7 @@ components:
         prenomUtilisateur: { type: string, example: "Alice" }
         login: { type: string, example: "alice.dupont" }
         ville: { type: string, nullable: true }
-        codePostal: { type: string, nullable: true, maxLength: 5 }
+        codePostal: { type: string, nullable: true }
         dateHeureCreation: { type: string, format: date-time }
 
     UtilisateurCreation:
@@ -467,11 +743,11 @@ components:
     Compte:
       type: object
       properties:
-        idCompte: { type: integer, example: 1 }
+        idCompte: { type: integer }
         descriptionCompte: { type: string, example: "Compte courant" }
         nomBanque: { type: string, example: "BNP Paribas" }
-        montantInitial: { type: number, format: float, example: 1500.00 }
-        dernierMontantCalcule: { type: number, format: float, example: 2340.50 }
+        montantInitial: { type: number, format: float }
+        dernierMontantCalcule: { type: number, format: float }
 
     CompteCreation:
       type: object
@@ -497,7 +773,7 @@ components:
     Mouvement:
       type: object
       properties:
-        idMouvement: { type: integer, example: 42 }
+        idMouvement: { type: integer }
         dateMouvement: { type: string, format: date }
         idCompte: { type: integer }
         idTiers: { type: integer, nullable: true }
@@ -507,7 +783,7 @@ components:
         typeMouvement: { type: string, enum: [D, C] }
 
     MouvementDetail:
-      description: "Correspond à la vue V_MOUVEMENT"
+      description: "Mouvement enrichi — correspond à la vue V_MOUVEMENT"
       type: object
       properties:
         idMouvement: { type: integer }
@@ -569,6 +845,69 @@ components:
         idCategorie: { type: integer, nullable: true }
         idSousCategorie: { type: integer, nullable: true }
 
+    Categorie:
+      type: object
+      properties:
+        idCategorie: { type: integer }
+        nomCategorie: { type: string, example: "Alimentation" }
+        idUtilisateur: { type: integer, nullable: true, description: "NULL = catégorie système" }
+
+    CategorieCreation:
+      type: object
+      required: [nomCategorie]
+      properties:
+        nomCategorie: { type: string, maxLength: 50 }
+
+    CategorieAvecSousCategories:
+      type: object
+      properties:
+        idCategorie: { type: integer }
+        nomCategorie: { type: string }
+        idUtilisateur: { type: integer, nullable: true }
+        sousCategories:
+          type: array
+          items: { $ref: "#/components/schemas/SousCategorie" }
+
+    SousCategorie:
+      type: object
+      properties:
+        idSousCategorie: { type: integer }
+        nomSousCategorie: { type: string, example: "Courses" }
+        idCategorie: { type: integer }
+        montant_base: { type: integer, nullable: true }
+        periode: { type: string, enum: [M, H, A, Q] }
+
+    SousCategorieCreation:
+      type: object
+      required: [nomSousCategorie]
+      properties:
+        nomSousCategorie: { type: string, maxLength: 50 }
+        montant_base: { type: integer, nullable: true }
+        periode: { type: string, enum: [M, H, A, Q], default: "M" }
+
+    Tiers:
+      type: object
+      properties:
+        idTiers: { type: integer }
+        nomTiers: { type: string, example: "Carrefour" }
+        idUtilisateur: { type: integer }
+        idSousCategorieDefaut: { type: integer, nullable: true }
+
+    TiersCreation:
+      type: object
+      required: [nomTiers]
+      properties:
+        nomTiers: { type: string, maxLength: 50 }
+        idSousCategorieDefaut: { type: integer, nullable: true }
+
+    PageTiers:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Tiers" }
+        meta: { $ref: "#/components/schemas/PaginationMeta" }
+
     Erreur:
       type: object
       properties:
@@ -603,7 +942,7 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Erreur" }
     UnprocessableEntity:
-      description: "422 — Erreur métier"
+      description: "422 — Erreur métier (trigger SQL)"
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Erreur" }
