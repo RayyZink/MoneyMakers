@@ -1,0 +1,32 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: money_db_container
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'no'
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker/db/database.sql:/docker-entrypoint-initdb.d/1-init.sql
+      - mysql_money_data:/var/lib/mysql
+
+  app:
+    image: node:22
+    container_name: money_api_container
+    restart: always
+    working_dir: /app
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      - db
+
+volumes:
+  mysql_money_data:
