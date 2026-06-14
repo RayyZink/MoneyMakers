@@ -22,24 +22,24 @@ L'application MoneyMakers repose sur la réécriture et la modernisation d'une b
 Avant d'écrire du code, cloner le dépôt et s'isoler sur une branche de travail dédiée :
 ```bash
 # Clonage du dépôt
-git clone https://github.com/RayyZink/MoneyMakers.git
+git clone [https://github.com/RayyZink/MoneyMakers.git](https://github.com/RayyZink/MoneyMakers.git)
 cd MoneyMakers
 
-# Création d'une branche de travail
-git checkout -b feature/[nom_de_la_branche]
+# Création d'une branche de requête (Exemple pour Corentin)
+git checkout -b feature/gestion-tiers
 ```
 
 ### Étape B : Lancer l'environnement de développement conteneurisé
 L'intégralité de l'environnement (base de données MySQL 8.0 et serveur d'application Node.js) est configurée pour s'exécuter dans Docker. L'installation des packages s'effectue automatiquement au démarrage de l'infrastructure.
 
-1. S'assurer que le script SQL se trouve dans le répertoire `./docker/db/database.sql`.
+1. S'assurer que le script SQL commun se trouve dans le répertoire `./docker/db/database.sql`.
 2. Ouvrir un terminal à la racine du projet et exécuter la commande suivante pour construire et démarrer l'écosystème en arrière-plan :
 ```bash
 docker compose up -d
 ```
 
 ### Étape C : Suivre la compilation et les logs applicatifs
-Le conteneur applicatif gère lui-même l'installation des dépendances et démarre le serveur avec rechargement automatique.
+Le conteneur applicatif gère lui-même l'installation des dépendances et démarre le serveur avec rechargement automatique (Hot-Reload).
 1. Consulter les logs en temps réel pour vérifier le bon démarrage ou inspecter les erreurs :
 ```bash
 docker logs -f money_api_container
@@ -47,7 +47,9 @@ docker logs -f money_api_container
 2. L'API est active et accessible sur l'URL : `http://localhost:3000/api/v1`.
 
 ### Étape D : Fermer et arrêter proprement l'environnement de travail
-1. Ouvrir un terminal à la racine du projet et exécuter la commande suivante pour éteindre les conteneurs tout en préservant intactes les données de la base de données :
+Une fois la session de travail terminée, il est nécessaire de couper l'environnement pour libérer les ressources du processeur et de la mémoire RAM de la machine hôte.
+
+1. Ouvrir un terminal à la racine du projet et exécuter la commande suivante pour éteindre et supprimer les conteneurs tout en préservant intactes les données de la base de données :
 ```bash
 docker compose down
 ```
@@ -62,7 +64,7 @@ docker compose down -v
 
 L'architecture respecte le design pattern en couches organisé par fonctionnalités (feature-based) sous le répertoire `src/features/`. Le couplage entre les classes est réalisé par injection de dépendances manuelle par constructeur.
 
-* **`routes.ts` :** Point d'entrée d'un module. Définir les URI et associer les verbes HTTP (GET, POST, etc.) conformes au contrat OpenAPI. Instancier le Repository, le passer au Service, puis passer le Service au Controller.
+* **`routes.ts` :** Point d'entrée d'un module. Définir les URI et associer les verbes HTTP (GET, POST, etc.) conformes au contrat OpenAPI. Instancier le Repository, le passer au Service, puis passe le Service au Controller.
 * **`controller.ts` (Thin Controller) :** Gérer uniquement l'interface HTTP. Extraire les données de la requête (req.params, req.body), vérifier l'identité de l'utilisateur via le token, déléguer le traitement au Service et formater la réponse JSON finale. Ne contenir aucun SQL ni logique métier. Pousser toutes les erreurs vers le bas via la fonction next(error).
 * **`service.ts` :** Cœur de la logique métier applicative. Appliquer les règles de gestion du budget, filtrer les permissions de accès et transformer les structures de données. Rester totalement découplé d'Express et du protocole HTTP. Convertir les formats bruts SQL en camelCase normalisé pour le JSON.
 * **`repository.ts` :** Unique passerelle vers la base de données. Contenir l'intégralité des requêtes SQL pures et les appels de procédures stockées. Recevoir l'instance de connexion globale Pool par son constructeur.
@@ -70,7 +72,7 @@ L'architecture respecte le design pattern en couches organisé par fonctionnalit
 
 ---
 
-## 4. Exemple d'Implémentation
+## 4. Exemple d'Implémentation de Référence : La Route de Milan
 
 Pour comprendre comment implémenter les requêtes sur les branches respectives, voici le modèle d'architecture complet pour le endpoint `GET /comptes/{idCompte}/mouvements` rédigé ici à titre d'exemple.
 
@@ -173,11 +175,28 @@ const service = new MouvementsService(repository);
 const controller = new MouvementsController(service);
 
 // Association de l'URI, de la méthode HTTP et de la fonction du contrôleur
-router.get('/:idCompte/mouvements', (req, res, next) =>
-    controller.getMouvements(req, res, next)
+router.get('/:idCompte/mouvements', (req, res, next) => 
+  controller.getMouvements(req, res, next)
 );
 
 export default router;
+```
+
+### Extrait du fichier central `src/app.ts` (Montage de la fonctionnalité)
+```typescript
+import express from 'express';
+import mouvementsRoutes from './features/mouvements/routes';
+
+const app = express();
+
+// ... Configuration des middlewares globaux (helmet, cors, express.json) ...
+
+// Enregistrement et point d'ancrage du routeur de la fonctionnalité
+app.use('/api/v1/comptes', mouvementsRoutes);
+
+// ... Configuration du middleware global de gestion des erreurs (en dernier) ...
+
+export default app;
 ```
 
 ---
