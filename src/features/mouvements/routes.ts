@@ -10,4 +10,8 @@ const repository = new MouvementsRepository(pool);
 const service = new MouvementsService(repository);
 const controller = new MouvementsController(service);
 
+router.get('/:idCompte/mouvements', (req, res, next) =>
+    controller.getMouvements(req, res, next)
+);
+
 export default router;

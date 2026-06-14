@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { errorMiddleware } from './middlewares/error';
+import mouvementsRoutes from './features/mouvements/routes';
 
 const app = express();
 
@@ -23,7 +24,7 @@ app.use(limiter);
 
 // ------------------------------------------------------------
 // ENREGISTREMENT DES ROUTES CI-DESSOUS
-
+app.use('/api/v1/mouvements', mouvementsRoutes);
 
 // ------------------------------------------------------------
 
