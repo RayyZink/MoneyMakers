@@ -1,3 +1,4 @@
+USE moneymakers;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- Nettoyer les tables pour éviter les doublons
