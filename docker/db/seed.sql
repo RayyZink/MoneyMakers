@@ -1,4 +1,4 @@
-USE moneymakers;
+USE MONEY_2026;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- Nettoyer les tables pour éviter les doublons
@@ -12,7 +12,7 @@ TRUNCATE TABLE Utilisateur;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Insertion d'un utilisateur de test
-INSERT INTO Utilisateur (idUtilisateur, nom, prenom, email, motDePasse)
+INSERT INTO Utilisateur (idUtilisateur, nomUtilisateur, prenomUtilisateur, login, hashcode)
 VALUES (1, 'Dupont', 'Jean', 'jean.dupont@email.com', 'mot_de_passe_provisoire');
 
 -- Insertion de catégories
