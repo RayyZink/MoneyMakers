@@ -10,6 +10,7 @@ services:
       - "3306:3306"
     volumes:
       - ./docker/db/database.sql:/docker-entrypoint-initdb.d/1-init.sql
+      - ./docker/db/seed.sql:/docker-entrypoint-initdb.d/2-seed.sql
       - mysql_money_data:/var/lib/mysql
 
   app:
