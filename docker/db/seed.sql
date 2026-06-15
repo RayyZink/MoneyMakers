@@ -126,7 +126,7 @@ INSERT INTO Compte (idCompte, descriptionCompte, nomBanque, idUtilisateur, monta
 INSERT INTO Tiers (idTiers, nomTiers, idUtilisateur, idSousCategorieDefaut) VALUES
                                                                                 (1, 'Carrefour', 1, 1),
                                                                                 (2, 'Lidl', 1, 1),
-                                                                                (3, 'McDonald's', 1, 2),
+                                                                                (3, 'McDonald''s', 1, 2),
   (4, 'Paul Boulangerie', 1, 3),
   (5, 'Propriétaire', 1, 4),
   (6, 'EDF', 1, 5),
