@@ -78,7 +78,7 @@ app.get('/api/v1', (_req, res) => {
 app.use('/api/v1/auth',            authRoutes);
 app.use('/api/v1/utilisateurs',    utilisateursRoutes);
 app.use('/api/v1/comptes',         comptesRoutes);
-app.use('/api/v1/comptes',         mouvementsRoutes);   // GET /api/v1/comptes/:idCompte/mouvements
+app.use('/api/v1/comptes',         mouvementsRoutes);
 app.use('/api/v1/virements',       virementsRoutes);
 app.use('/api/v1/categories',      categoriesRoutes);
 app.use('/api/v1/sous-categories', sousCategoriesRoutes);

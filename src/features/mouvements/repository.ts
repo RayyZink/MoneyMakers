@@ -5,11 +5,11 @@ export class MouvementsRepository {
 
     async findMouvementsByCompteId(idCompte: number): Promise<any[]> {
         const query = `
-      SELECT idMouvement, dateMouvement, descriptionCompte, nomTiers, 
-             nomCategorie, nomSousCategorie, montant, typeMouvement
-      FROM V_MOUVEMENT
-      WHERE idCompte = ?
-    `;
+            SELECT idMouvement, dateMouvement, descriptionCompte, nomTiers,
+                   nomCategorie, nomSousCategorie, montant, typeMouvement
+            FROM V_MOUVEMENT
+            WHERE idCompte = ?
+        `;
         const [rows] = await this.db.query(query, [idCompte]);
         return rows as any[];
     }
