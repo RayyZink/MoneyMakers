@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Grille d'évaluation générique d'une API</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 13px; margin: 30px; color: #222; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .subtitle { color: #555; font-size: 12px; margin-bottom: 20px; }
+
+  table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+  th, td { border: 1px solid #ccc; padding: 8px 10px; vertical-align: top; }
+  th { background: #1a3a5c; color: #fff; text-align: center; font-size: 12px; }
+
+  /* Category header rows */
+  .cat { background: #d6e4f0; font-weight: bold; font-size: 12px; color: #1a3a5c; }
+
+  /* Alternating row shading within a category */
+  .odd  { background: #ffffff; }
+  .even { background: #f5f9fd; }
+
+  /* Score input cells */
+  input[type=number] {
+    width: 48px; border: 1px solid #aaa; border-radius: 3px;
+    padding: 3px 4px; font-size: 13px; text-align: center;
+  }
+
+  /* Score column */
+  .score-col { text-align: center; width: 70px; }
+  .pond-col  { text-align: center; width: 60px; }
+  .note-col  { width: 160px; }
+  .just-col  { width: 220px; font-style: italic; color: #444; font-size: 11.5px; }
+
+  /* Summary table */
+  .summary { margin-top: 30px; width: 420px; }
+  .summary th { background: #1a3a5c; }
+  .summary td { text-align: center; }
+  .total-row { font-weight: bold; background: #d6e4f0; }
+
+  /* Print */
+  @media print { input { border: none; } }
+
+  /* Colored score guide */
+  .guide { display: flex; gap: 12px; margin: 10px 0 18px; font-size: 11px; }
+  .guide span { padding: 3px 8px; border-radius: 3px; }
+  .g0 { background:#fde8e8; } .g1 { background:#fde8e8; } .g2 { background:#fff3cd; }
+  .g3 { background:#d4edda; } .g4 { background:#d4edda; } .g5 { background:#c3e6cb; font-weight:bold; }
+</style>
+</head>
+<body>
+
+<h1>Grille d'évaluation générique d'une API</h1>
+<div class="subtitle">
+  API évaluée : __________________________________ &nbsp;&nbsp;|&nbsp;&nbsp;
+  Date : __________________ &nbsp;&nbsp;|&nbsp;&nbsp;
+  Évaluateur : __________________________________
+</div>
+
+<div class="guide">
+  <strong>Score :</strong>
+  <span class="g0">0 – Absent</span>
+  <span class="g1">1 – Insuffisant</span>
+  <span class="g2">2 – Partiel</span>
+  <span class="g3">3 – Satisfaisant</span>
+  <span class="g4">4 – Bien</span>
+  <span class="g5">5 – Excellent</span>
+</div>
+
+<table>
+<colgroup>
+  <col style="width:22%">
+  <col style="width:28%">
+  <col style="width:22%">
+  <col class="pond-col">
+  <col class="score-col">
+  <col class="note-col">
+</colgroup>
+<thead>
+  <tr>
+    <th>Critère</th>
+    <th>Description / Ce qu'on évalue</th>
+    <th>Justification pédagogique</th>
+    <th>Pondération</th>
+    <th>Score (0–5)</th>
+    <th>Commentaires</th>
+  </tr>
+</thead>
+<tbody>
+
+<!-- ═══════════════════════════════════════════ 1. DOCUMENTATION -->
+<tr><td colspan="6" class="cat">1. Documentation</td></tr>
+
+<tr class="odd">
+  <td>Référence complète des endpoints</td>
+  <td>Chaque route, paramètre, en-tête et code de retour est documenté.</td>
+  <td>Sans référence exhaustive, le développeur doit deviner ou tester à l'aveugle, ce qui allonge l'intégration.</td>
+  <td class="pond-col">×2</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s1"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="even">
+  <td>Exemples de requêtes/réponses</td>
+  <td>Des exemples concrets (cURL, JSON) accompagnent chaque endpoint.</td>
+  <td>Les exemples réduisent le temps de prise en main ; ils illustrent des cas nominaux et des cas d'erreur.</td>
+  <td class="pond-col">×2</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s2"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="odd">
+  <td>Guide de démarrage rapide (quickstart)</td>
+  <td>Un tutoriel pas-à-pas permet d'effectuer un premier appel en moins de 15 min.</td>
+  <td>Le quickstart détermine la première impression et le taux d'adoption : un onboarding difficile rebute les développeurs.</td>
+  <td class="pond-col">×1</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s3"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="even">
+  <td>Changelog / historique des versions</td>
+  <td>Les modifications entre versions sont consignées et datées.</td>
+  <td>Essentiel pour planifier les migrations et éviter les régressions silencieuses lors des mises à jour.</td>
+  <td class="pond-col">×1</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s4"></td>
+  <td class="note-col"></td>
+</tr>
+
+<!-- ═══════════════════════════════════════════ 2. SÉCURITÉ -->
+<tr><td colspan="6" class="cat">2. Sécurité &amp; Authentification</td></tr>
+
+<tr class="odd">
+  <td>Mécanisme d'authentification</td>
+  <td>L'API utilise un standard reconnu (OAuth 2.0, JWT, clé API via HTTPS).</td>
+  <td>Un mécanisme standardisé réduit les vulnérabilités et facilite l'intégration avec des outils tiers.</td>
+  <td class="pond-col">×3</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s5"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="even">
+  <td>Chiffrement des communications</td>
+  <td>Toutes les communications passent obligatoirement par TLS/HTTPS.</td>
+  <td>Sans chiffrement, les credentials et données transitent en clair sur le réseau, exposant les utilisateurs.</td>
+  <td class="pond-col">×3</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s6"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="odd">
+  <td>Gestion des autorisations (RBAC/scopes)</td>
+  <td>Les accès sont granulaires : un token ne donne que les droits nécessaires.</td>
+  <td>Principe du moindre privilège : limiter la surface d'attaque en cas de fuite de credentials.</td>
+  <td class="pond-col">×2</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s7"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="even">
+  <td>Rate limiting &amp; protection anti-abus</td>
+  <td>Des quotas sont définis et communiqués ; les dépassements retournent 429.</td>
+  <td>Protège la stabilité du service face aux surcharges accidentelles ou aux attaques DoS.</td>
+  <td class="pond-col">×2</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s8"></td>
+  <td class="note-col"></td>
+</tr>
+
+<!-- ═══════════════════════════════════════════ 3. CONCEPTION -->
+<tr><td colspan="6" class="cat">3. Conception &amp; Respect des standards</td></tr>
+
+<tr class="odd">
+  <td>Respect des conventions REST / GraphQL</td>
+  <td>Nommage des ressources en noms pluriels, verbes HTTP corrects (GET, POST, PUT, PATCH, DELETE).</td>
+  <td>Suivre les conventions REST rend l'API prévisible et réduit la courbe d'apprentissage pour tout développeur.</td>
+  <td class="pond-col">×2</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s9"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="even">
+  <td>Codes de statut HTTP cohérents</td>
+  <td>L'API retourne les codes sémantiquement corrects (200, 201, 400, 401, 403, 404, 422, 500…).</td>
+  <td>Des codes corrects permettent aux clients de traiter automatiquement les réponses sans analyser le corps.</td>
+  <td class="pond-col">×2</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s10"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="odd">
+  <td>Versioning de l'API</td>
+  <td>La version est exposée dans l'URL (/v1/) ou via en-tête Accept.</td>
+  <td>Permettre la coexistence de versions évite de casser les intégrations existantes lors des évolutions.</td>
+  <td class="pond-col">×2</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s11"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="even">
+  <td>Cohérence du nommage &amp; format des données</td>
+  <td>Nommage uniforme (camelCase ou snake_case), format de dates ISO 8601, types homogènes.</td>
+  <td>L'incohérence oblige les consommateurs à gérer des cas particuliers, source de bugs et de dette technique.</td>
+  <td class="pond-col">×1</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s12"></td>
+  <td class="note-col"></td>
+</tr>
+
+<!-- ═══════════════════════════════════════════ 4. GESTION DES ERREURS -->
+<tr><td colspan="6" class="cat">4. Gestion des erreurs</td></tr>
+
+<tr class="odd">
+  <td>Messages d'erreur explicites</td>
+  <td>Le corps de l'erreur contient un code machine, un message humain et un lien vers la doc.</td>
+  <td>Un message vague ("Error 400") allonge considérablement le débogage ; un message précis permet une correction immédiate.</td>
+  <td class="pond-col">×2</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s13"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="even">
+  <td>Validation des entrées</td>
+  <td>Les paramètres invalides sont signalés avec le champ concerné et la règle violée.</td>
+  <td>Signaler précisément quel champ est invalide évite un cycle d'essai-erreur coûteux en temps de développement.</td>
+  <td class="pond-col">×2</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s14"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="odd">
+  <td>Cohérence du format d'erreur</td>
+  <td>Toutes les erreurs suivent le même schéma JSON, quelle que soit la route.</td>
+  <td>Un format uniforme permet d'écrire un seul gestionnaire d'erreurs côté client, réduisant le code boilerplate.</td>
+  <td class="pond-col">×1</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s15"></td>
+  <td class="note-col"></td>
+</tr>
+
+<!-- ═══════════════════════════════════════════ 5. PERFORMANCE -->
+<tr><td colspan="6" class="cat">5. Performance &amp; Scalabilité</td></tr>
+
+<tr class="odd">
+  <td>Latence des réponses</td>
+  <td>Le temps de réponse médian (p50) et au percentile 99 (p99) sont conformes aux SLA annoncés.</td>
+  <td>La latence impacte directement l'expérience utilisateur final des applications clientes.</td>
+  <td class="pond-col">×2</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s16"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="even">
+  <td>Pagination des résultats</td>
+  <td>Les collections volumineuses sont paginées (cursor, offset ou keyset) avec métadonnées de navigation.</td>
+  <td>Sans pagination, une réponse peut peser plusieurs Mo, saturant le réseau et la mémoire du client.</td>
+  <td class="pond-col">×2</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s17"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="odd">
+  <td>Mécanismes de cache</td>
+  <td>Utilisation des en-têtes HTTP (ETag, Cache-Control) ou d'un cache côté serveur.</td>
+  <td>Le cache réduit la charge serveur et améliore la réactivité pour les données peu volatiles.</td>
+  <td class="pond-col">×1</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s18"></td>
+  <td class="note-col"></td>
+</tr>
+
+<!-- ═══════════════════════════════════════════ 6. FIABILITÉ -->
+<tr><td colspan="6" class="cat">6. Fiabilité &amp; Disponibilité</td></tr>
+
+<tr class="odd">
+  <td>SLA de disponibilité (uptime)</td>
+  <td>Un engagement de disponibilité (ex. 99,9 %) est publié et mesuré.</td>
+  <td>Un SLA contractualisé permet aux équipes de dimensionner leur propre stratégie de résilience (retry, fallback).</td>
+  <td class="pond-col">×2</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s19"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="even">
+  <td>Idempotence des opérations sensibles</td>
+  <td>Les endpoints POST/PUT acceptent une clé d'idempotence pour éviter les doublons en cas de retry.</td>
+  <td>Sans idempotence, un timeout réseau peut entraîner la duplication d'une commande ou d'un paiement.</td>
+  <td class="pond-col">×2</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s20"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="odd">
+  <td>Page de statut &amp; communications d'incidents</td>
+  <td>Une page de statut publique expose l'état des services en temps réel.</td>
+  <td>La transparence sur les incidents réduit les tickets de support et maintient la confiance des utilisateurs.</td>
+  <td class="pond-col">×1</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s21"></td>
+  <td class="note-col"></td>
+</tr>
+
+<!-- ═══════════════════════════════════════════ 7. EXPÉRIENCE DÉVELOPPEUR -->
+<tr><td colspan="6" class="cat">7. Expérience développeur (DX)</td></tr>
+
+<tr class="odd">
+  <td>SDK &amp; bibliothèques clientes</td>
+  <td>Des SDK officiels existent pour les langages majeurs (Python, JS, Java, etc.).</td>
+  <td>Un SDK évite aux développeurs de ré-implémenter la sérialisation, la gestion des erreurs et la signature des requêtes.</td>
+  <td class="pond-col">×2</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s22"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="even">
+  <td>Environnement de test / sandbox</td>
+  <td>Un environnement de staging ou des données fictives permettent de tester sans affecter la production.</td>
+  <td>Un sandbox évite les effets de bord coûteux lors du développement (commandes réelles, emails envoyés, etc.).</td>
+  <td class="pond-col">×2</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s23"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="odd">
+  <td>Console interactive / Playground</td>
+  <td>Une interface web permet de tester les appels sans écrire de code (ex. Swagger UI).</td>
+  <td>Tester visuellement accélère l'exploration et permet à des profils non-dev (PM, QA) de comprendre l'API.</td>
+  <td class="pond-col">×1</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s24"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="even">
+  <td>Support &amp; communauté</td>
+  <td>Forums, Stack Overflow tag, chat (Discord/Slack), tickets — avec un délai de réponse défini.</td>
+  <td>Un bon support réduit les blocages des équipes d'intégration et fidélise les développeurs sur la plateforme.</td>
+  <td class="pond-col">×1</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s25"></td>
+  <td class="note-col"></td>
+</tr>
+
+<!-- ═══════════════════════════════════════════ 8. OBSERVABILITÉ -->
+<tr><td colspan="6" class="cat">8. Observabilité &amp; Monitoring</td></tr>
+
+<tr class="odd">
+  <td>Logs &amp; traçabilité des requêtes</td>
+  <td>Chaque requête produit un identifiant de corrélation (request-id) renvoyé dans les en-têtes.</td>
+  <td>Un request-id permet de retrouver une requête spécifique dans les logs pour diagnostiquer un incident.</td>
+  <td class="pond-col">×1</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s26"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="even">
+  <td>Métriques d'utilisation exposées</td>
+  <td>Un dashboard ou une API de métriques donne accès au quota consommé, aux erreurs, à la latence.</td>
+  <td>Exposer les métriques aide les équipes clientes à anticiper les dépassements de quota et optimiser leurs appels.</td>
+  <td class="pond-col">×1</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s27"></td>
+  <td class="note-col"></td>
+</tr>
+<tr class="odd">
+  <td>Webhooks / notifications push</td>
+  <td>Pour les événements asynchrones, l'API pousse des notifications plutôt que d'imposer le polling.</td>
+  <td>Les webhooks réduisent la charge réseau et permettent des réactions en temps réel sans polling coûteux.</td>
+  <td class="pond-col">×1</td>
+  <td class="score-col"><input type="number" min="0" max="5" id="s28"></td>
+  <td class="note-col"></td>
+</tr>
+
+</tbody>
+</table>
+
+<!-- ════════ TABLEAU RÉCAPITULATIF ════════ -->
+<table class="summary" style="margin-top:28px">
+  <thead>
+    <tr>
+      <th style="width:180px">Catégorie</th>
+      <th style="width:80px">Score obtenu / max</th>
+      <th style="width:80px">Pondéré / max</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="odd"><td>1. Documentation</td><td>/20</td><td>/120</td></tr>
+    <tr class="even"><td>2. Sécurité &amp; Auth.</td><td>/20</td><td>/200</td></tr>
+    <tr class="odd"><td>3. Conception &amp; Standards</td><td>/20</td><td>/140</td></tr>
+    <tr class="even"><td>4. Gestion des erreurs</td><td>/15</td><td>/75</td></tr>
+    <tr class="odd"><td>5. Performance &amp; Scalabilité</td><td>/15</td><td>/75</td></tr>
+    <tr class="even"><td>6. Fiabilité &amp; Dispo.</td><td>/15</td><td>/75</td></tr>
+    <tr class="odd"><td>7. Expérience développeur</td><td>/20</td><td>/100</td></tr>
+    <tr class="even"><td>8. Observabilité</td><td>/15</td><td>/45</td></tr>
+    <tr class="total-row"><td><strong>TOTAL</strong></td><td><strong>   /140</strong></td><td><strong>   /830</strong></td></tr>
+  </tbody>
+</table>
+
+<div style="margin-top:22px; font-size:12px; color:#555;">
+  <strong>Légende des pondérations :</strong> ×1 = standard | ×2 = important | ×3 = critique<br>
+  <strong>Interprétation du score pondéré :</strong>
+  &lt; 40 % → API insuffisante &nbsp;|&nbsp; 40–60 % → API partielle &nbsp;|&nbsp;
+  60–80 % → API acceptable &nbsp;|&nbsp; &gt; 80 % → API de qualité
+</div>
+
+</body>
+</html>
