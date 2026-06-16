@@ -1,4 +1,4 @@
-import { MouvementsRepository, MouvementFiltres } from './repository';
+import { MouvementsRepository } from './repository';
 
 export interface MouvementCreationDTO {
     dateMouvement?:   string;
@@ -29,58 +29,6 @@ const mapToDetail = (row: Record<string, unknown>) => ({
 export class MouvementsService {
     constructor(private mouvementsRepository: MouvementsRepository) {}
 
-    // ----------------------------------------------------------------
-    // GET /comptes/:idCompte/mouvements
-    // ----------------------------------------------------------------
-    async getMouvementsPourCompte(
-        idCompte: number,
-        filtres: {
-            dateDebut?:     string;
-            dateFin?:       string;
-            typeMouvement?: 'D' | 'C';
-            page:           number;
-            limit:          number;
-        },
-    ) {
-        const { rows, total } = await this.mouvementsRepository.findMouvementsByCompteId(
-            idCompte,
-            filtres as MouvementFiltres,
-        );
-
-        const { page, limit } = filtres;
-
-        return {
-            data: rows.map(mapToDetail),
-            meta: {
-                page,
-                limit,
-                total,
-                totalPages: Math.ceil(total / limit),
-            },
-        };
-    }
-
-    // ----------------------------------------------------------------
-    // POST /comptes/:idCompte/mouvements
-    // ----------------------------------------------------------------
-    async createMouvement(
-        idCompte: number,
-        dto:      MouvementCreationDTO,
-    ): Promise<Record<string, unknown>> {
-        const idMouvement = await this.mouvementsRepository.createMouvement(
-            idCompte,
-            dto.dateMouvement   ?? null,
-            dto.idTiers         ?? null,
-            dto.idCategorie     ?? null,
-            dto.idSousCategorie ?? null,
-            dto.montant,
-            dto.typeMouvement,
-        );
-
-        const row = await this.mouvementsRepository.findMouvementById(idMouvement);
-        if (!row) throw new Error('Mouvement introuvable après création');
-        return mapToDetail(row as Record<string, unknown>);
-    }
 
     // ----------------------------------------------------------------
     // GET /mouvements/:idMouvement

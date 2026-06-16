@@ -15,15 +15,7 @@ const controller = new MouvementsController(service);
 // (monté sur le router principal avec le préfixe /comptes)
 // ----------------------------------------------------------------
 
-// GET  /comptes/:idCompte/mouvements  — liste paginée + filtres
-router.get('/:idCompte/mouvements', (req, res, next) =>
-    controller.getMouvements(req, res, next)
-);
 
-// POST /comptes/:idCompte/mouvements  — créer un mouvement
-router.post('/:idCompte/mouvements', (req, res, next) =>
-    controller.createMouvement(req, res, next)
-);
 
 // ----------------------------------------------------------------
 // Routes sous /mouvements/:idMouvement
