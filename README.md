@@ -9,4 +9,4 @@ protéger l'api pour des mouvements bancaires frauduleux (ex virement d'une cat�
 Quand on créer un virement, ça créé 2 mouvements, un crédit sur l'un et un débit sur l'autre
 --> Fonctionnalité à peut être ajouter : Un virement entre deux utilisateurs.
 
-Lien du doc sur les spécifications : https://docs.google.com/document/d/1BjyCx92OEzXsKWaT_WiEJuKxd-OY3fIjIaO5Hr42Un0/edit?tab=t.0
+Lien du doc de la grille d'évaluation : https://docs.google.com/spreadsheets/d/1XH-ubJQZ47jEu012_QayPxYYJ8LDeVUBSldTtPeyvnk/edit?usp=sharing
