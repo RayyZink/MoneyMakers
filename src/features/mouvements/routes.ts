@@ -10,8 +10,45 @@ const repository = new MouvementsRepository(pool);
 const service    = new MouvementsService(repository);
 const controller = new MouvementsController(service);
 
+// ----------------------------------------------------------------
+// Routes sous /comptes/:idCompte/mouvements
+// (monté sur le router principal avec le préfixe /comptes)
+// ----------------------------------------------------------------
+
+// GET  /comptes/:idCompte/mouvements  — liste paginée + filtres
 router.get('/:idCompte/mouvements', (req, res, next) =>
     controller.getMouvements(req, res, next)
+);
+
+// POST /comptes/:idCompte/mouvements  — créer un mouvement
+router.post('/:idCompte/mouvements', (req, res, next) =>
+    controller.createMouvement(req, res, next)
+);
+
+// ----------------------------------------------------------------
+// Routes sous /mouvements/:idMouvement
+// (monté sur le router principal avec le préfixe /mouvements)
+// ----------------------------------------------------------------
+
+// OPTIONS /mouvements/:idMouvement   — CORS preflight
+router.options('/:idMouvement', (_req, res) => {
+    res.setHeader('Allow', 'GET, PUT, DELETE, OPTIONS');
+    return res.status(204).send();
+});
+
+// GET    /mouvements/:idMouvement    — récupérer (vue enrichie)
+router.get('/:idMouvement', (req, res, next) =>
+    controller.getMouvementById(req, res, next)
+);
+
+// PUT    /mouvements/:idMouvement    — modifier
+router.put('/:idMouvement', (req, res, next) =>
+    controller.updateMouvement(req, res, next)
+);
+
+// DELETE /mouvements/:idMouvement    — supprimer
+router.delete('/:idMouvement', (req, res, next) =>
+    controller.deleteMouvement(req, res, next)
 );
 
 export default router;
