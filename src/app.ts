@@ -77,6 +77,7 @@ app.get('/api/v1', (_req, res) => {
 // Montage des routes métier
 app.use('/api/v1/auth',            authRoutes);
 app.use('/api/v1/utilisateurs',    utilisateursRoutes);
+app.use('/api/v1/utilisateurs',    comptesRoutes);
 app.use('/api/v1/comptes',         comptesRoutes);
 app.use('/api/v1/comptes',         mouvementsRoutes);   // GET /api/v1/comptes/:idCompte/mouvements
 app.use('/api/v1/virements',       virementsRoutes);

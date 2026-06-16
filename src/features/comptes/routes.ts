@@ -10,8 +10,8 @@ const repository = new ComptesRepository(pool);
 const service = new ComptesService(repository);
 const controller = new ComptesController(service);
 
-router.get('/utilisateurs/:idUtilisateur', controller.getComptes);
-router.post('/utilisateurs/:idUtilisateur', controller.createCompte);
+router.get('/:idUtilisateur/comptes', controller.getComptes);
+router.post('/:idUtilisateur/comptes', controller.createCompte);
 
 router.options('/:idCompte', (req: Request, res: Response) => {
     res.set('Allow', 'GET, PUT, DELETE, OPTIONS');
