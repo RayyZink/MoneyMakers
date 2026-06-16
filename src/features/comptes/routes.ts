@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { ComptesController } from './controller';
 import { ComptesService } from './service';
 import { ComptesRepository } from './repository';
@@ -12,6 +12,11 @@ const controller = new ComptesController(service);
 
 router.get('/utilisateurs/:idUtilisateur', controller.getComptes);
 router.post('/utilisateurs/:idUtilisateur', controller.createCompte);
+
+router.options('/:idCompte', (req: Request, res: Response) => {
+    res.set('Allow', 'GET, PUT, DELETE, OPTIONS');
+    res.status(204).send();
+});
 
 router.get('/:idCompte', controller.getCompteById);
 router.put('/:idCompte', controller.updateCompte);
