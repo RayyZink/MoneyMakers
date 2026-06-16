@@ -151,7 +151,7 @@ SELECT c.idCategorie       AS idCategorie,
        sc.idSousCategorie  AS idSousCategorie,
        sc.nomSousCategorie AS nomSousCategorie
 FROM Categorie c
-         JOIN SousCategorie sc ON sc.idcategorie = c.idCategorie
+         JOIN SousCategorie sc ON sc.idCategorie = c.idCategorie;
 -- ORDER BY supprime : trier cote applicatif (ORDER BY dans vue non garanti)
 
 -- V_MOUVEMENT expose idUtilisateur pour filtrage applicatif
@@ -176,14 +176,14 @@ FROM Mouvement m
          JOIN  Compte       c    ON m.idCompte       = c.idCompte
          LEFT JOIN Tiers    t    ON m.idTiers         = t.idTiers
          LEFT JOIN Categorie ctg ON m.idCategorie     = ctg.idCategorie
-         LEFT JOIN SousCategorie sctg ON m.idSousCategorie = sctg.idSousCategorie
-    -- ORDER BY supprime : trier dans le repository (ORDER BY dans vue non garanti)
+         LEFT JOIN SousCategorie sctg ON m.idSousCategorie = sctg.idSousCategorie;
+-- ORDER BY supprime : trier dans le repository (ORDER BY dans vue non garanti)
 
 -- ============================================================
 -- TRIGGERS DE SÉCURITÉ
 -- ============================================================
 
-    DELIMITER $$
+DELIMITER $$
 
 -- ------------------------------------------------------------
 -- trg_mouvement_before_insert
@@ -224,20 +224,20 @@ FROM SousCategorie WHERE idSousCategorie = NEW.idSousCategorie;
 
 IF NEW.idCategorie IS NULL OR vIdCategorieDeScat != NEW.idCategorie THEN
             SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Sécurité : la sous-catégorie n\'appartient pas à la catégorie indiquée.';
-        END IF;
-    END IF;
+                SET MESSAGE_TEXT = 'Sécurité : la sous-catégorie n''appartient pas à la catégorie indiquée.';
+END IF;
+END IF;
 
     -- Vérification Tiers
     IF NEW.idTiers IS NOT NULL THEN
-        SELECT idUtilisateur INTO vIdUtilisateurTiers
-        FROM Tiers WHERE idTiers = NEW.idTiers;
+SELECT idUtilisateur INTO vIdUtilisateurTiers
+FROM Tiers WHERE idTiers = NEW.idTiers;
 
-        IF vIdUtilisateurTiers != vIdUtilisateurCompte THEN
+IF vIdUtilisateurTiers != vIdUtilisateurCompte THEN
             SIGNAL SQLSTATE '45000'
                 SET MESSAGE_TEXT = 'Sécurité : le tiers n\'appartient pas à l\'utilisateur du compte.';
-        END IF;
-    END IF;
+END IF;
+END IF;
 END$$
 
 -- ------------------------------------------------------------
@@ -266,30 +266,30 @@ BEGIN
 
     IF vIdUtilisateurAncienCompte != vIdUtilisateurCompte THEN
             SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Sécurité : impossible de déplacer un mouvement vers le compte d\'un autre utilisateur.';
-        END IF;
-    END IF;
+                SET MESSAGE_TEXT = 'Sécurité : impossible de déplacer un mouvement vers le compte d''un autre utilisateur.';
+END IF;
+END IF;
 
     -- Vérification Catégorie
     IF NEW.idCategorie IS NOT NULL THEN
-        SELECT idUtilisateur INTO vIdUtilisateurCategorie
-        FROM Categorie WHERE idCategorie = NEW.idCategorie;
+SELECT idUtilisateur INTO vIdUtilisateurCategorie
+FROM Categorie WHERE idCategorie = NEW.idCategorie;
 
-        IF vIdUtilisateurCategorie IS NOT NULL
+IF vIdUtilisateurCategorie IS NOT NULL
             AND vIdUtilisateurCategorie != vIdUtilisateurCompte THEN
             SIGNAL SQLSTATE '45000'
                 SET MESSAGE_TEXT = 'Sécurité : la catégorie n\'appartient pas à l\'utilisateur du compte.';
-        END IF;
-    END IF;
+END IF;
+END IF;
 
     -- Vérification SousCategorie
     IF NEW.idSousCategorie IS NOT NULL THEN
-        SELECT idcategorie INTO vIdCategorieDeScat
-        FROM SousCategorie WHERE idSousCategorie = NEW.idSousCategorie;
+SELECT idcategorie INTO vIdCategorieDeScat
+FROM SousCategorie WHERE idSousCategorie = NEW.idSousCategorie;
 
-        IF NEW.idCategorie IS NULL OR vIdCategorieDeScat != NEW.idCategorie THEN
+IF NEW.idCategorie IS NULL OR vIdCategorieDeScat != NEW.idCategorie THEN
             SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Sécurité : la sous-catégorie n\'appartient pas à la catégorie indiquée.';
+                SET MESSAGE_TEXT = 'Sécurité : la sous-catégorie n''appartient pas à la catégorie indiquée.';
 END IF;
 END IF;
 
@@ -343,7 +343,7 @@ SELECT idUtilisateur INTO vIdUtilisateurCredit FROM Compte WHERE idCompte = pIdC
 -- L'initiateur doit posséder le compte débiteur
 IF vIdUtilisateurDebit != pIdUtilisateurInitiateur THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Accès refusé : le compte débiteur n\'appartient pas à l\'utilisateur initiateur.';
+            SET MESSAGE_TEXT = 'Accès refusé : le compte débiteur n''appartient pas à l''utilisateur initiateur.';
 END IF;
 
     -- Détection virement inter-utilisateurs
@@ -360,7 +360,7 @@ FROM Categorie WHERE idCategorie = pIdCategorie;
 IF vIdUtilisateurCategorie IS NOT NULL
             AND vIdUtilisateurCategorie != pIdUtilisateurInitiateur THEN
             SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Accès refusé : la catégorie n\'appartient pas à l\'utilisateur initiateur.';
+                SET MESSAGE_TEXT = 'Accès refusé : la catégorie n''appartient pas à l''utilisateur initiateur.';
 END IF;
 END IF;
 
@@ -371,29 +371,29 @@ FROM SousCategorie WHERE idSousCategorie = pIdSousCategorie;
 
 IF pIdCategorie IS NULL OR vIdCategorieDeScat != pIdCategorie THEN
             SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Erreur : la sous-catégorie n\'appartient pas à la catégorie indiquée.';
-        END IF;
-    END IF;
+                SET MESSAGE_TEXT = 'Erreur : la sous-catégorie n''appartient pas à la catégorie indiquée.';
+END IF;
+END IF;
 
     -- Création du Virement
-    INSERT INTO Virement (idCompteDebit, idCompteCredit, montant, dateVirement,
-                          commentaire, idUtilisateurInitiateur, virementInterUtilisateur)
-    VALUES (pIdCompteDebit, pIdCompteCredit, pMontant, pDateVirement,
-            pCommentaire, pIdUtilisateurInitiateur, vInterUtilisateur);
+INSERT INTO Virement (idCompteDebit, idCompteCredit, montant, dateVirement,
+                      commentaire, idUtilisateurInitiateur, virementInterUtilisateur)
+VALUES (pIdCompteDebit, pIdCompteCredit, pMontant, pDateVirement,
+        pCommentaire, pIdUtilisateurInitiateur, vInterUtilisateur);
 
-    SET vIdVirement = LAST_INSERT_ID();
+SET vIdVirement = LAST_INSERT_ID();
 
     -- Mouvement DÉBIT (compte source)
-    INSERT INTO Mouvement (dateMouvement, idCompte, idCategorie, idSousCategorie,
-                           idVirement, montant, typeMouvement)
-    VALUES (pDateVirement, pIdCompteDebit, pIdCategorie, pIdSousCategorie,
-            vIdVirement, pMontant, 'D');
+INSERT INTO Mouvement (dateMouvement, idCompte, idCategorie, idSousCategorie,
+                       idVirement, montant, typeMouvement)
+VALUES (pDateVirement, pIdCompteDebit, pIdCategorie, pIdSousCategorie,
+        vIdVirement, pMontant, 'D');
 
-    -- Mouvement CRÉDIT (compte destination)
-    INSERT INTO Mouvement (dateMouvement, idCompte, idCategorie, idSousCategorie,
-                           idVirement, montant, typeMouvement)
-    VALUES (pDateVirement, pIdCompteCredit, pIdCategorie, pIdSousCategorie,
-            vIdVirement, pMontant, 'C');
+-- Mouvement CRÉDIT (compte destination)
+INSERT INTO Mouvement (dateMouvement, idCompte, idCategorie, idSousCategorie,
+                       idVirement, montant, typeMouvement)
+VALUES (pDateVirement, pIdCompteCredit, pIdCategorie, pIdSousCategorie,
+        vIdVirement, pMontant, 'C');
 END$$
 
 -- ------------------------------------------------------------
@@ -402,15 +402,15 @@ END$$
 -- ------------------------------------------------------------
 CREATE PROCEDURE getCategories(IN pIdUtilisateur INT)
 BEGIN
-    SELECT c.idCategorie,
-           c.nomCategorie,
-           sc.idSousCategorie,
-           sc.nomSousCategorie
-    FROM Categorie c
-             JOIN SousCategorie sc ON sc.idcategorie = c.idCategorie
-    WHERE c.idUtilisateur IS NULL
-       OR c.idUtilisateur = pIdUtilisateur
-    ORDER BY c.idCategorie, sc.idSousCategorie;
+SELECT c.idCategorie,
+       c.nomCategorie,
+       sc.idSousCategorie,
+       sc.nomSousCategorie
+FROM Categorie c
+         JOIN SousCategorie sc ON sc.idcategorie = c.idCategorie
+WHERE c.idUtilisateur IS NULL
+   OR c.idUtilisateur = pIdUtilisateur
+ORDER BY c.idCategorie, sc.idSousCategorie;
 END$$
 
 -- ------------------------------------------------------------
@@ -424,22 +424,22 @@ BEGIN
     DECLARE v_done        INT DEFAULT 0;
     DECLARE cur_mvt CURSOR FOR
         -- AVERTISSEMENT : idCategorie=7 est herite du mono-utilisateur. Remplacer par un parametre.
-        SELECT idMouvement, montant FROM Mouvement WHERE typeMouvement = 'D' AND idCategorie = 7;
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = 1;
+SELECT idMouvement, montant FROM Mouvement WHERE typeMouvement = 'D' AND idCategorie = 7;
+DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = 1;
 
-    OPEN cur_mvt;
-    mvt_loop: LOOP
+OPEN cur_mvt;
+mvt_loop: LOOP
         FETCH cur_mvt INTO v_idMouvement, v_montant;
         IF v_done = 1 THEN
             LEAVE mvt_loop;
-        END IF;
+END IF;
         SET v_delta = 10 * v_montant * (RAND() * 0.2) - 0.1;
         IF v_delta > 0 THEN
             SET v_delta = v_delta * -1;
-        END IF;
-        UPDATE Mouvement SET montant = v_delta WHERE idMouvement = v_idMouvement;
-    END LOOP;
-    CLOSE cur_mvt;
+END IF;
+UPDATE Mouvement SET montant = v_delta WHERE idMouvement = v_idMouvement;
+END LOOP;
+CLOSE cur_mvt;
 END$$
 
 DELIMITER ;
