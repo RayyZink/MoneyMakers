@@ -11,3 +11,14 @@ const service = new ComptesService(repository);
 const controller = new ComptesController(service);
 
 export default router;
+
+
+// GET  /comptes/:idCompte/mouvements  — liste paginée + filtres
+router.get('/:idCompte/mouvements', (req, res, next) =>
+    controller.getMouvements(req, res, next)
+);
+
+// POST /comptes/:idCompte/mouvements  — créer un mouvement
+router.post('/:idCompte/mouvements', (req, res, next) =>
+    controller.createMouvement(req, res, next)
+);
