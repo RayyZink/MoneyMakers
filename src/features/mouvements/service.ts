@@ -1,12 +1,12 @@
 import { MouvementsRepository } from './repository';
 
-export interface MouvementCreationDTO {
-    dateMouvement?:   string;
+export interface MouvementUpdateDTO {
+    dateMouvement?:   string | null;
     idTiers?:         number | null;
     idCategorie?:     number | null;
     idSousCategorie?: number | null;
-    montant:          number;
-    typeMouvement:    'D' | 'C';
+    montant?:         number;
+    typeMouvement?:   'D' | 'C';
 }
 
 const mapToDetail = (row: Record<string, unknown>) => ({
@@ -50,7 +50,7 @@ export class MouvementsService {
     // ----------------------------------------------------------------
     async updateMouvement(
         idMouvement: number,
-        dto:         MouvementCreationDTO,
+        dto:         MouvementUpdateDTO,
     ): Promise<Record<string, unknown>> {
         const proprietaire = await this.mouvementsRepository.findProprietaireMouvement(idMouvement);
         if (!proprietaire) {
@@ -59,15 +59,7 @@ export class MouvementsService {
             throw err;
         }
 
-        await this.mouvementsRepository.updateMouvement(
-            idMouvement,
-            dto.dateMouvement   ?? null,
-            dto.idTiers         ?? null,
-            dto.idCategorie     ?? null,
-            dto.idSousCategorie ?? null,
-            dto.montant,
-            dto.typeMouvement,
-        );
+        await this.mouvementsRepository.updateMouvement(idMouvement, dto);
 
         const row = await this.mouvementsRepository.findMouvementById(idMouvement);
         if (!row) throw new Error('Mouvement introuvable après mise à jour');

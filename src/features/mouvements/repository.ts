@@ -32,38 +32,38 @@ export class MouvementsRepository {
     }
 
     // ----------------------------------------------------------------
-    // PUT /mouvements/:idMouvement
+    // PUT /mouvements/:idMouvement — mise à jour partielle
+    // Seuls les champs explicitement présents dans `champs` sont
+    // modifiés ; les autres conservent leur valeur en base.
     // ----------------------------------------------------------------
     async updateMouvement(
-        idMouvement:     number,
-        dateMouvement:   string | null,
-        idTiers:         number | null,
-        idCategorie:     number | null,
-        idSousCategorie: number | null,
-        montant:         number,
-        typeMouvement:   'D' | 'C',
+        idMouvement: number,
+        champs: {
+            dateMouvement?:   string | null;
+            idTiers?:         number | null;
+            idCategorie?:     number | null;
+            idSousCategorie?: number | null;
+            montant?:         number;
+            typeMouvement?:   'D' | 'C';
+        },
     ): Promise<boolean> {
-        const query = `
-            UPDATE Mouvement
-            SET
-                dateMouvement   = COALESCE(?, dateMouvement),
-                idTiers         = ?,
-                idCategorie     = ?,
-                idSousCategorie = ?,
-                montant         = ?,
-                typeMouvement   = ?,
-                dateHeureMAJ    = CURRENT_TIMESTAMP()
-            WHERE idMouvement = ?
-        `;
-        const [result] = await this.db.query<ResultSetHeader>(query, [
-            dateMouvement,
-            idTiers,
-            idCategorie,
-            idSousCategorie,
-            montant,
-            typeMouvement,
-            idMouvement,
-        ]);
+        const sets:   string[]  = [];
+        const params: unknown[] = [];
+
+        if ('dateMouvement'   in champs) { sets.push('dateMouvement   = COALESCE(?, dateMouvement)'); params.push(champs.dateMouvement); }
+        if ('idTiers'         in champs) { sets.push('idTiers         = ?'); params.push(champs.idTiers); }
+        if ('idCategorie'     in champs) { sets.push('idCategorie     = ?'); params.push(champs.idCategorie); }
+        if ('idSousCategorie' in champs) { sets.push('idSousCategorie = ?'); params.push(champs.idSousCategorie); }
+        if ('montant'         in champs) { sets.push('montant         = ?'); params.push(champs.montant); }
+        if ('typeMouvement'   in champs) { sets.push('typeMouvement   = ?'); params.push(champs.typeMouvement); }
+
+        if (sets.length === 0) return true; // rien à modifier
+
+        sets.push('dateHeureMAJ = CURRENT_TIMESTAMP()');
+        params.push(idMouvement);
+
+        const query = `UPDATE Mouvement SET ${sets.join(', ')} WHERE idMouvement = ?`;
+        const [result] = await this.db.query<ResultSetHeader>(query, params);
         return result.affectedRows > 0;
     }
 
