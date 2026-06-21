@@ -12,7 +12,7 @@ import { errorMiddleware } from './middlewares/error';
 // Import des routers (injection de dépendances gérée dans chaque routes.ts)
 import authRoutes          from './features/auth/routes';
 import utilisateursRoutes  from './features/utilisateurs/routes';
-import comptesRoutes       from './features/comptes/routes';
+import { comptesRouter, comptesUtilisateursRouter } from './features/comptes/routes';
 import mouvementsRoutes    from './features/mouvements/routes';
 import virementsRoutes     from './features/virements/routes';
 import categoriesRoutes    from './features/categories/routes';
@@ -77,7 +77,8 @@ app.get('/api/v1', (_req, res) => {
 // Montage des routes métier
 app.use('/api/v1/auth',            authRoutes);
 app.use('/api/v1/utilisateurs',    utilisateursRoutes);
-app.use('/api/v1/comptes',         comptesRoutes);
+app.use('/api/v1/utilisateurs',    comptesUtilisateursRouter);
+app.use('/api/v1/comptes',         comptesRouter); // GET /api/v1/comptes/:idCompte/mouvements
 app.use('/api/v1/mouvements',      mouvementsRoutes);
 app.use('/api/v1/virements',       virementsRoutes);
 app.use('/api/v1/categories',      categoriesRoutes);
