@@ -5,143 +5,153 @@ import { AuthenticatedRequest } from '../../middlewares/auth';
 export class CategoriesController {
     constructor(private categoriesService: CategoriesService) { }
 
+private getUserId(req: AuthenticatedRequest): number {
+    const idUtilisateur = req.user?.idUtilisateur;
 
-    /**
-     * Récupère toutes les catégories pour l'utilisateur spécifié.
-     */
-    async getAll(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-        try {
-            const idUtilisateur = req.user?.idUtilisateur ?? (req.query.idUtilisateur ? parseInt(req.query.idUtilisateur as unknown as string, 10) : undefined);
-            if (!idUtilisateur) {
-                return res.status(400).json({ code: 400, message: 'idUtilisateur manquant (fournir un token ou ?idUtilisateur=...)' });
-            }
-
-            // Délégation totale à la couche métier
-            const resultats = await this.categoriesService.getAll(idUtilisateur);
-
-            // Réponse HTTP standardisée
-            return res.status(200).json({
-                data: resultats,
-                meta: {
-                    page: 1,
-                    limit: resultats.length,
-                    total: resultats.length,
-                    totalPages: 1,
-                },
-            });
-        } catch (error) {
-            // Toutes les erreurs remontent au middleware global — jamais gérées ici
-            next(error);
-        }
+    if (!idUtilisateur) {
+        throw new Error('Utilisateur non authentifié');
     }
 
-    /**
-        * Récupère toutes les catégories pour l'utilisateur spécifié.
-        */
-    async getById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-        try {
-            const idUtilisateur = req.user?.idUtilisateur ?? (req.query.idUtilisateur ? parseInt(req.query.idUtilisateur as unknown as string, 10) : undefined);
-            if (!idUtilisateur) {
-                return res.status(400).json({ code: 400, message: 'idUtilisateur manquant (fournir un token ou ?idUtilisateur=...)' });
-            }
-            const idCategorie = parseInt(req.params.idCategorie, 10);
+    return idUtilisateur;
+}
 
-            // Délégation totale à la couche métier
-            const resultats = await this.categoriesService.getById(idCategorie, idUtilisateur);
+async getAll(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const idUtilisateur = this.getUserId(req);
 
-            // Réponse HTTP standardisée
-            return res.status(200).json({
-                data: resultats,
-                meta: {
-                    page: 1,
-                    limit: Array.isArray(resultats) ? resultats.length : 1,
-                    total: Array.isArray(resultats) ? resultats.length : 1,
-                    totalPages: 1,
-                },
-            });
-        } catch (error) {
-            // Toutes les erreurs remontent au middleware global — jamais gérées ici
-            next(error);
-        }
+        const resultats = await this.categoriesService.getAll(idUtilisateur);
+
+        return res.status(200).json({
+            data: resultats,
+            meta: {
+                page: 1,
+                limit: resultats.length,
+                total: resultats.length,
+                totalPages: 1,
+            },
+        });
+    } catch (error) {
+        next(error);
     }
-    
+}
 
-    async create(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-        try {
-            const idUtilisateur = req.user?.idUtilisateur ?? (req.query.idUtilisateur ? parseInt(req.query.idUtilisateur as unknown as string, 10) : undefined);
-            if (!idUtilisateur) {
-                return res.status(400).json({ code: 400, message: 'idUtilisateur manquant (fournir un token ou ?idUtilisateur=...)' });
-            }
-            const nomCategorie = req.body.nomCategorie ?? (req.query.nomCategorie ? String(req.query.nomCategorie) : undefined);
-            if (!nomCategorie || typeof nomCategorie !== 'string' || !nomCategorie.trim()) {
-                return res.status(400).json({ code: 400, message: 'nomCategorie manquant ou invalide (envoyer dans le corps JSON ou ?nomCategorie=...)' });
-            }
-            const resultats = await this.categoriesService.create(nomCategorie, idUtilisateur);
-
-            return res.status(201).json({
-                data: resultats,
-                meta: {
-                    page: 1,
-                    limit: 1,
-                    total: 1,
-                    totalPages: 1,
-                },
-            });
-        }
-        catch (error) {
-            next(error);
-        }
-    }
-    async update(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-        try {
-            const idUtilisateur = req.user?.idUtilisateur ?? (req.query.idUtilisateur ? parseInt(req.query.idUtilisateur as unknown as string, 10) : undefined);
-            if (!idUtilisateur) {
-                return res.status(400).json({ code: 400, message: 'idUtilisateur manquant (fournir un token ou ?idUtilisateur=...)' });
-            }
-            const idCategorie = parseInt(req.params.idCategorie, 10);
-            const nomCategorie = req.body.nomCategorie ?? (req.query.nomCategorie ? String(req.query.nomCategorie) : undefined);
-            if (!nomCategorie || typeof nomCategorie !== 'string' || !nomCategorie.trim()) {
-                return res.status(400).json({ code: 400, message: 'nomCategorie manquant ou invalide (envoyer dans le corps JSON ou ?nomCategorie=...)' });
-            }
-
-            const resultats = await this.categoriesService.update(idCategorie, nomCategorie, idUtilisateur);
-
-            return res.status(200).json({
-                data: resultats,
-                meta: {
-                    page: 1,
-                    limit: 1,
-                    total: 1,
-                    totalPages: 1,
-                },
-            });
-        }
-        catch (error) {
-            next(error);
-        }
-    }
-
-    async delete(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-        const idUtilisateur = req.user?.idUtilisateur ?? (req.query.idUtilisateur ? parseInt(req.query.idUtilisateur as unknown as string, 10) : undefined);
-        if (!idUtilisateur) {
-            return res.status(400).json({ code: 400, message: 'idUtilisateur manquant (fournir un token ou ?idUtilisateur=...)' });
-        }
+async getById(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const idUtilisateur = this.getUserId(req);
         const idCategorie = parseInt(req.params.idCategorie, 10);
 
-        const resultats = await this.categoriesService.delete(idCategorie, idUtilisateur);
-        try {
-            return res.status(200).json({
-                data: resultats,
-                meta: {
-                    page: 1,
-                    limit: 1,
-                    total: 1,
-                    totalPages: 1,
-                },
-            });
-        }
-        catch (error) {
-            next(error);
-        }
+        const resultat = await this.categoriesService.getById(
+            idCategorie,
+            idUtilisateur
+        );
+
+        return res.status(200).json({
+            data: resultat,
+            meta: {
+                page: 1,
+                limit: resultat ? 1 : 0,
+                total: resultat ? 1 : 0,
+                totalPages: 1,
+            },
+        });
+    } catch (error) {
+        next(error);
     }
+}
+
+async create(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const idUtilisateur = this.getUserId(req);
+
+        const { nomCategorie } = req.body;
+
+        const resultat = await this.categoriesService.create(
+            nomCategorie,
+            idUtilisateur
+        );
+
+        return res.status(201).json({
+            data: resultat,
+            meta: {
+                page: 1,
+                limit: 1,
+                total: 1,
+                totalPages: 1,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async update(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const idUtilisateur = this.getUserId(req);
+        const idCategorie = parseInt(req.params.idCategorie, 10);
+        const { nomCategorie } = req.body;
+
+        const resultat = await this.categoriesService.update(
+            idCategorie,
+            nomCategorie,
+            idUtilisateur
+        );
+
+        return res.status(200).json({
+            data: resultat,
+            meta: {
+                page: 1,
+                limit: 1,
+                total: 1,
+                totalPages: 1,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async delete(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const idUtilisateur = this.getUserId(req);
+        const idCategorie = parseInt(req.params.idCategorie, 10);
+
+        const resultat = await this.categoriesService.delete(
+            idCategorie,
+            idUtilisateur
+        );
+
+        return res.status(200).json({
+            data: resultat,
+            meta: {
+                page: 1,
+                limit: 1,
+                total: 1,
+                totalPages: 1,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 }

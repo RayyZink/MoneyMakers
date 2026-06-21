@@ -10,13 +10,15 @@ const repository = new CategoriesRepository(pool);
 const service = new CategoriesService(repository);
 const controller = new CategoriesController(service);
 
-// Les routes ici sont montées sur /api/v1/categories —
-// définir les chemins relatifs à ce router.
 
-router.get('/', (req, res, next) => controller.getAll(req, res, next));
-router.get('/:idCategorie', (req, res, next) => controller.getById(req, res, next));
-router.post('/', (req, res, next) => controller.create(req, res, next));
-router.put('/:idCategorie', (req, res, next) => controller.update(req, res, next));
-router.delete('/:idCategorie', (req, res, next) => controller.delete(req, res, next));
+import { authMiddleware } from '../../middlewares/auth';
+
+router.use(authMiddleware);
+
+router.get('/', controller.getAll.bind(controller));
+router.get('/:idCategorie', controller.getById.bind(controller));
+router.post('/', controller.create.bind(controller));
+router.put('/:idCategorie', controller.update.bind(controller));
+router.delete('/:idCategorie', controller.delete.bind(controller));
 
 export default router;
