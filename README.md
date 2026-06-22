@@ -15,6 +15,7 @@ L'application MoneyMakers repose sur la réécriture et la modernisation d'une b
 - **Atomisation des Flux :** La création d'un virement (via la procédure stockée `creerVirement`) génère automatiquement et de manière atomique deux mouvements en base de données : un débit sur le compte émetteur et un crédit sur le compte récepteur.
 - **Spécifications Complètes :** [Google Doc - Spécifications Money API](https://docs.google.com/document/d/1BjyCx92OEzXsKWaT_WiEJuKxd-OY3fIjIaO5Hr42Un0/edit?tab=t.0)
 
+-**Grille d'évaluation d'API :** [Google sheet](https://docs.google.com/spreadsheets/d/1XH-ubJQZ47jEu012_QayPxYYJ8LDeVUBSldTtPeyvnk/edit?gid=0#gid=0)
 ---
 
 ## 2. Instructions d'Installation, de Démarrage et d'Arrêt
