@@ -19,11 +19,11 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ============================================================
 -- UTILISATEURS
 -- ============================================================
--- hashcode = bcrypt('password123') — à remplacer en production
+-- hashcode = bcrypt('password123')
 INSERT INTO Utilisateur (idUtilisateur, nomUtilisateur, prenomUtilisateur, login, hashcode, ville, codePostal) VALUES
-                                                                                                                   (1, 'Dupont',   'Jean',    'jean.dupont',    '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Paris',      '75001'),
-                                                                                                                   (2, 'Martin',   'Sophie',  'sophie.martin',  '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Lyon',       '69001'),
-                                                                                                                   (3, 'Leclerc',  'Thomas',  'thomas.leclerc', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Bordeaux',   '33000');
+                                                                                                                   (1, 'Dupont',   'Jean',    'jean.dupont',    '$2y$10$PESb1/V8lehPMdFy4b.m7u2t90DPzoP7SkzIh1flg0OMjYR0gA4mS', 'Paris',      '75001'),
+                                                                                                                   (2, 'Martin',   'Sophie',  'sophie.martin',  '$2y$10$PESb1/V8lehPMdFy4b.m7u2t90DPzoP7SkzIh1flg0OMjYR0gA4mS', 'Lyon',       '69001'),
+                                                                                                                   (3, 'Leclerc',  'Thomas',  'thomas.leclerc', '$2y$10$PESb1/V8lehPMdFy4b.m7u2t90DPzoP7SkzIh1flg0OMjYR0gA4mS', 'Bordeaux',   '33000');
 
 -- ============================================================
 -- CATÉGORIES

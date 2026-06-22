@@ -66,9 +66,37 @@ Presque toutes les routes de l'API exigent une authentification. Sans elle, l'AP
 
 L'authentification fonctionne par token JWT : une connexion réussie fournit une chaîne de caractères (le token), à transmettre ensuite à chaque requête pour prouver l'identité de l'appelant.
 
-Le jeu de données de test contient 3 utilisateurs déjà enregistrés (login `jean.dupont`, `sophie.martin`, `thomas.leclerc`) avec les ids 1, 2 et 3 respectivement. Leurs mots de passe ne sont pas connus : seul le hash chiffré est présent en base, conformément à une gestion normale des mots de passe (jamais stockés en clair). Se connecter avec ces comptes via `POST /auth/login` n'est donc possible qu'en devinant le bon mot de passe, sans garantie de succès. Les deux méthodes ci-dessous permettent d'obtenir un token de façon fiable.
+### Méthode 1 — Se connecter avec un compte du jeu de données de test (recommandé)
 
-### Méthode 1 — Créer un nouveau compte (recommandé)
+Le jeu de données de test contient 3 utilisateurs, tous avec le mot de passe `password123` :
+
+| Login | Nom | Id utilisateur | Comptes associés |
+|---|---|---|---|
+| `jean.dupont` | Jean Dupont | 1 | 1, 2, 3 |
+| `sophie.martin` | Sophie Martin | 2 | 4, 5 |
+| `thomas.leclerc` | Thomas Leclerc | 3 | 6, 7, 8 |
+
+Dans Swagger, ouvrir **POST /auth/login**, cliquer sur **Try it out**, et remplir le corps de la requête :
+
+```json
+{
+  "login": "jean.dupont",
+  "motDePasse": "password123"
+}
+```
+
+La réponse contient un champ `token` :
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "utilisateur": { "idUtilisateur": 1, "nomUtilisateur": "Dupont", ... }
+}
+```
+
+Copier cette valeur de `token` (sans les guillemets). Cette méthode est la plus pratique pour tester les endpoints car les comptes, mouvements, catégories et tiers de ces utilisateurs sont déjà peuplés par le seed.
+
+### Méthode 2 — Créer son propre compte
 
 Utiliser **POST /auth/register** dans Swagger, avec un corps de requête de ce type :
 
@@ -81,29 +109,11 @@ Utiliser **POST /auth/register** dans Swagger, avec un corps de requête de ce t
 }
 ```
 
-Le mot de passe doit faire au moins 8 caractères. La réponse contient l'utilisateur créé, avec son `idUtilisateur` (très probablement `4`, puisque le seed va de 1 à 3).
+Le mot de passe doit faire au moins 8 caractères. La réponse contient l'utilisateur créé, avec son `idUtilisateur` (très probablement `4`, puisque le seed va de 1 à 3). Se connecter ensuite avec ces identifiants via **POST /auth/login** pour récupérer le token.
 
-Se connecter ensuite avec ces identifiants via **POST /auth/login** :
+> Note : un compte créé manuellement ne possède aucun compte bancaire, catégorie ni tiers au départ. Certains tests de la section 4 (qui s'appuient sur les ids du seed) ne fonctionneront donc pas avec ce compte — utiliser la méthode 1 pour ces cas.
 
-```json
-{
-  "login": "test.utilisateur",
-  "motDePasse": "motdepasse123"
-}
-```
-
-La réponse contient un champ `token` :
-
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIs...",
-  "utilisateur": { "idUtilisateur": 4, "nomUtilisateur": "Test", ... }
-}
-```
-
-Copier cette valeur de `token` (sans les guillemets). Comme ce nouveau compte n'a aucun compte bancaire ni catégorie associée, certains tests de la section 4 (qui utilisent les ids du seed) ne fonctionneront pas avec ce compte — voir méthode 2 pour un token correspondant à un utilisateur existant.
-
-### Méthode 2 — Générer un token directement pour un utilisateur du seed
+### Méthode 3 — Générer un token directement (pour les développeurs)
 
 Un script `token.ts` est fourni à la racine du projet pour générer un token sans passer par un mot de passe, en spécifiant directement l'id de l'utilisateur souhaité.
 
@@ -111,21 +121,17 @@ Un script `token.ts` est fourni à la racine du projet pour générer un token s
 npx ts-node token.ts
 ```
 
-Cette commande affiche un token dans la console, signé pour l'utilisateur `idUtilisateur: 1` (Jean Dupont) par défaut. Modifier cette valeur directement dans le fichier `token.ts` permet de générer un token pour un autre utilisateur (par exemple `idUtilisateur: 2` pour Sophie Martin). Ce token est valide 1 heure.
+Cette commande affiche un token dans la console, signé pour l'utilisateur `idUtilisateur: 1` (Jean Dupont) par défaut. Modifier cette valeur directement dans le fichier `token.ts` permet de générer un token pour un autre utilisateur. Ce token est valide 1 heure.
 
 > ⚠️ Cette commande doit être lancée depuis le dossier racine du projet (là où se trouve le fichier `.env`), sous peine de signature avec une mauvaise clé et de rejet par le serveur.
 
 ### Utilisation du token dans Swagger
 
-Une fois le token récupéré (méthode 1 ou 2), cliquer sur le bouton **Authorize** 🔒 en haut de la page Swagger, et coller dans le champ :
+Une fois le token récupéré (par l'une des 3 méthodes), cliquer sur le bouton **Authorize** 🔒 en haut de la page Swagger, et coller dans le champ ``bearerAuth``.
 
-```
-Bearer eyJhbGciOiJIUzI1NiIs...
-```
+Toutes les requêtes suivantes seront authentifiées avec ce token jusqu'à fermeture de la page ou changement de token.
 
-Le mot `Bearer` suivi d'un espace est obligatoire. Toutes les requêtes suivantes seront authentifiées avec ce token jusqu'à fermeture de la page ou changement de token.
-
-Le token expire après un certain temps (24h par défaut pour ceux générés via `/auth/login`, 1h pour ceux générés via `token.ts`). En cas d'expiration, l'API renvoie de nouveau une erreur 401 — il suffit de recommencer la procédure d'authentification.
+Le token expire après un certain temps. En cas d'expiration, l'API renvoie de nouveau une erreur 401 — il suffit de recommencer la procédure d'authentification.
 
 ---
 
@@ -175,9 +181,9 @@ Suite de tests à effectuer dans Swagger pour valider chaque fonctionnalité, da
   → 201 (tiers, catégorie et sous-catégorie utilisés appartiennent bien à l'utilisateur 1 : Carrefour / Alimentation / Supermarché).
 - **POST /comptes/1/mouvements** en remplaçant `idCategorie` par `7` (catégorie appartenant à l'utilisateur 2) → 422, blocage de l'association d'une catégorie n'appartenant pas à l'utilisateur.
 - Récupération de l'id d'un mouvement existant via `GET /comptes/1/mouvements?limit=1`, puis :
-  - **GET /mouvements/{id}** → 200.
-  - **PUT /mouvements/{id}** avec `{ "montant": 100 }` → 200, seul le montant change (les autres champs restent identiques, aucun besoin de tout renvoyer).
-  - **DELETE /mouvements/{id}** → 204.
+    - **GET /mouvements/{id}** → 200.
+    - **PUT /mouvements/{id}** avec `{ "montant": 100 }` → 200, seul le montant change (les autres champs restent identiques, aucun besoin de tout renvoyer).
+    - **DELETE /mouvements/{id}** → 204.
 
 ### Virements
 
@@ -222,7 +228,7 @@ Un code 400 avec un message du type *"Expected double-quoted property name in JS
 
 ```json
 {
-  "montant": 1410
+  "montant": 1410,
 }
 ```
 

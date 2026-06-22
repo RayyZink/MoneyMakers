@@ -741,8 +741,8 @@ components:
       properties:
         idUtilisateur: { type: integer, example: 1 }
         nomUtilisateur: { type: string, example: "Dupont" }
-        prenomUtilisateur: { type: string, example: "Alice" }
-        login: { type: string, example: "alice.dupont" }
+        prenomUtilisateur: { type: string, example: "Jean" }
+        login: { type: string, example: "jean.dupont" }
         ville: { type: string, nullable: true }
         codePostal: { type: string, nullable: true }
         dateHeureCreation: { type: string, format: date-time }
@@ -770,8 +770,8 @@ components:
       type: object
       required: [login, motDePasse]
       properties:
-        login: { type: string, example: "alice.dupont" }
-        motDePasse: { type: string, example: "MotDePasse123!" }
+        login: { type: string, example: "jean.dupont" }
+        motDePasse: { type: string, example: "password123" }
 
     LoginResponse:
       type: object
