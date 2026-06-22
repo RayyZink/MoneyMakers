@@ -18,6 +18,7 @@ L'application MoneyMakers repose sur la réécriture et la modernisation d'une b
 - **Spécifications Complètes :** [Google Doc - Spécifications Money API](https://docs.google.com/document/d/1BjyCx92OEzXsKWaT_WiEJuKxd-OY3fIjIaO5Hr42Un0/edit?tab=t.0)
 
 - **Grille d'évaluation de l'API :** [Google sheet - Grille d'évaluation](https://docs.google.com/spreadsheets/d/1XH-ubJQZ47jEu012_QayPxYYJ8LDeVUBSldTtPeyvnk/edit?gid=0#gid=0)
+- **Présentation Slides Finale :** https://1drv.ms/p/c/98abb8ca80598fa7/IQB94RrnUNWHRorqUGwS_FsqATg0jSNnGZP3Wo7nykIuIxA?e=RTUsV4
 ---
 
 
