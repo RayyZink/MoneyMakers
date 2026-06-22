@@ -16,7 +16,7 @@ import { comptesRouter, comptesUtilisateursRouter } from './features/comptes/rou
 import mouvementsRoutes    from './features/mouvements/routes';
 import virementsRoutes     from './features/virements/routes';
 import categoriesRoutes    from './features/categories/routes';
-import sousCategoriesRoutes from './features/sous-categories/routes';
+import sousCategoriesRouter, { sousCategoriesImbriqueesRouter } from './features/sous-categories/routes';
 import tiersRoutes         from './features/tiers/routes';
 
 const app = express();
@@ -82,7 +82,8 @@ app.use('/api/v1/comptes',         comptesRouter); // GET /api/v1/comptes/:idCom
 app.use('/api/v1/mouvements',      mouvementsRoutes);
 app.use('/api/v1/virements',       virementsRoutes);
 app.use('/api/v1/categories',      categoriesRoutes);
-app.use('/api/v1/sous-categories', sousCategoriesRoutes);
+app.use('/api/v1/categories',      sousCategoriesImbriqueesRouter); // GET/POST /api/v1/categories/:idCategorie/sous-categories
+app.use('/api/v1/sous-categories', sousCategoriesRouter);
 app.use('/api/v1/tiers',           tiersRoutes);
 
 // Middleware global de gestion des erreurs

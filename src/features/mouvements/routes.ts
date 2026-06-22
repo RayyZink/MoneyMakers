@@ -3,6 +3,7 @@ import { MouvementsController } from './controller';
 import { MouvementsService }    from './service';
 import { MouvementsRepository } from './repository';
 import { pool }                 from '../../config/database';
+import { authMiddleware }       from '../../middlewares/auth';
 
 const router = Router();
 
@@ -10,17 +11,8 @@ const repository = new MouvementsRepository(pool);
 const service    = new MouvementsService(repository);
 const controller = new MouvementsController(service);
 
-// ----------------------------------------------------------------
-// Routes sous /comptes/:idCompte/mouvements
-// (monté sur le router principal avec le préfixe /comptes)
-// ----------------------------------------------------------------
+router.use(authMiddleware);
 
-
-
-// ----------------------------------------------------------------
-// Routes sous /mouvements/:idMouvement
-// (monté sur le router principal avec le préfixe /mouvements)
-// ----------------------------------------------------------------
 
 // OPTIONS /mouvements/:idMouvement   — CORS preflight
 router.options('/:idMouvement', (_req, res) => {

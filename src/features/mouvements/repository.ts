@@ -32,9 +32,7 @@ export class MouvementsRepository {
     }
 
     // ----------------------------------------------------------------
-    // PUT /mouvements/:idMouvement — mise à jour partielle
-    // Seuls les champs explicitement présents dans `champs` sont
-    // modifiés ; les autres conservent leur valeur en base.
+    // PUT /mouvements/:idMouvement
     // ----------------------------------------------------------------
     async updateMouvement(
         idMouvement: number,

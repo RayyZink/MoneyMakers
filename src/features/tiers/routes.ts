@@ -11,7 +11,6 @@ const repository = new TiersRepository(pool);
 const service = new TiersService(repository);
 const controller = new TiersController(service);
 
-// Sécurisation globale du routeur
 router.use(authMiddleware);
 
 router.get('/', (req, res, next) => controller.getAll(req, res, next));

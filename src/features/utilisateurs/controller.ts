@@ -1,11 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { UtilisateursService } from './service';
-import { HttpError } from './service';   // ligne 3 — au lieu de '../auth/service'
+import { HttpError } from './service';
 
 export class UtilisateursController {
     constructor(private utilisateursService: UtilisateursService) {}
 
-    // ⬅️ TA TÂCHE : voir son profil
     getById = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const idCible = Number(req.params.idUtilisateur);
@@ -25,7 +24,6 @@ export class UtilisateursController {
         }
     };
 
-    // ⬅️ TA TÂCHE : modifier ses infos perso
     update = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const idCible = Number(req.params.idUtilisateur);

@@ -8,7 +8,6 @@ export class HttpError extends Error {
     }
 }
 
-// On ne renvoie jamais le hash au client
 function toPublic(u: UtilisateurRow) {
     const { hashcode, ...rest } = u;
     return rest;

@@ -5,8 +5,6 @@ export class VirementsRepository {
 
     // ----------------------------------------------------------------
     // POST /virements
-    // Appelle la procédure stockée creerVirement (gère la sécurité +
-    // la création des 2 mouvements liés en une seule transaction).
     // ----------------------------------------------------------------
     async creerVirement(
         idCompteDebit:           number,
@@ -59,9 +57,24 @@ export class VirementsRepository {
     }
 
     // ----------------------------------------------------------------
+    // Vérifie qu'un utilisateur est impliqué dans le virement, soit en
+    // tant que propriétaire du compte débiteur, soit du compte créditeur.
+    // ----------------------------------------------------------------
+    async estImpliqueDansVirement(idVirement: number, idUtilisateur: number): Promise<boolean> {
+        const query = `
+            SELECT v.idVirement
+            FROM Virement v
+            JOIN Compte cd ON cd.idCompte = v.idCompteDebit
+            JOIN Compte cc ON cc.idCompte = v.idCompteCredit
+            WHERE v.idVirement = ?
+              AND (cd.idUtilisateur = ? OR cc.idUtilisateur = ?)
+        `;
+        const [rows] = await this.db.query<RowDataPacket[]>(query, [idVirement, idUtilisateur, idUtilisateur]);
+        return rows.length > 0;
+    }
+
+    // ----------------------------------------------------------------
     // PUT /virements/:idVirement — mise à jour partielle
-    // Ne touche que le Virement lui-même (les mouvements liés ne sont
-    // pas régénérés, par cohérence avec les triggers de sécurité).
     // ----------------------------------------------------------------
     async updateVirement(
         idVirement: number,
@@ -90,8 +103,6 @@ export class VirementsRepository {
 
     // ----------------------------------------------------------------
     // DELETE /virements/:idVirement
-    // Les mouvements liés (idVirement) repassent à NULL automatiquement
-    // (ON DELETE SET NULL défini sur Mouvement_Virement_fk).
     // ----------------------------------------------------------------
     async deleteVirement(idVirement: number): Promise<boolean> {
         const [result] = await this.db.query<ResultSetHeader>(

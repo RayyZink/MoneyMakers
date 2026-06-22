@@ -3,7 +3,6 @@ import { Pool } from 'mysql2/promise';
 export class TiersRepository {
   constructor(private db: Pool) {}
 
-  // Récupérer les tiers paginés et filtrés
   async findAndCountAll(
     idUtilisateur: number,
     page: number,
@@ -19,21 +18,18 @@ export class TiersRepository {
       queryArgs.push(`%${search}%`);
     }
 
-    // 1. Compter le total pour la pagination
-    const countQuery = `SELECT COUNT(*) as total FROM TIERS ${whereClause}`;
+    const countQuery = `SELECT COUNT(*) as total FROM Tiers ${whereClause}`;
     const [countRows] = await this.db.query(countQuery, queryArgs);
     const total = (countRows as any)[0].total;
 
-    // 2. Récupérer les données réelles
     const dataQuery = `
       SELECT idTiers, nomTiers, idUtilisateur, idSousCategorieDefaut
-      FROM TIERS
+      FROM Tiers
       ${whereClause}
       ORDER BY nomTiers ASC
       LIMIT ? OFFSET ?
     `;
-    
-    // MySQL exige des nombres pour LIMIT/OFFSET (l'injection de tableaux peut passer des chaînes)
+
     const [rows] = await this.db.query(dataQuery, [...queryArgs, limit, offset]);
 
     return { rows: rows as any[], total };
@@ -42,7 +38,7 @@ export class TiersRepository {
   async findById(idTiers: number, idUtilisateur: number): Promise<any | null> {
     const query = `
       SELECT idTiers, nomTiers, idUtilisateur, idSousCategorieDefaut
-      FROM TIERS
+      FROM Tiers
       WHERE idTiers = ? AND idUtilisateur = ?
     `;
     const [rows] = await this.db.query(query, [idTiers, idUtilisateur]);
@@ -52,7 +48,7 @@ export class TiersRepository {
 
   async create(nomTiers: string, idSousCategorieDefaut: number | null, idUtilisateur: number): Promise<number> {
     const query = `
-      INSERT INTO TIERS (nomTiers, idSousCategorieDefaut, idUtilisateur)
+      INSERT INTO Tiers (nomTiers, idSousCategorieDefaut, idUtilisateur)
       VALUES (?, ?, ?)
     `;
     const [result] = await this.db.query(query, [nomTiers, idSousCategorieDefaut, idUtilisateur]);
@@ -66,7 +62,7 @@ export class TiersRepository {
     idUtilisateur: number
   ): Promise<boolean> {
     const query = `
-      UPDATE TIERS
+      UPDATE Tiers
       SET nomTiers = ?, idSousCategorieDefaut = ?
       WHERE idTiers = ? AND idUtilisateur = ?
     `;
@@ -76,7 +72,7 @@ export class TiersRepository {
 
   async delete(idTiers: number, idUtilisateur: number): Promise<boolean> {
     const query = `
-      DELETE FROM TIERS
+      DELETE FROM Tiers
       WHERE idTiers = ? AND idUtilisateur = ?
     `;
     const [result] = await this.db.query(query, [idTiers, idUtilisateur]);
