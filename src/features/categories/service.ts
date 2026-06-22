@@ -59,13 +59,21 @@ export class CategoriesService {
             throw error;
         }
 
+        if (nomCategorie.length > 50) {
+            const error = new Error("Le nom de la catégorie ne doit pas dépasser 50 caractères.") as Error & { statusCode?: number };
+            error.statusCode = 400;
+            throw error;
+        }
+
         const exists = await this.categoriesRepository.existsByName(
             nomCategorie,
             idUtilisateur
         );
 
         if (exists) {
-            throw new Error("Une catégorie portant ce nom existe déjà.");
+            const error = new Error("Une catégorie portant ce nom existe déjà.") as Error & { statusCode?: number };
+            error.statusCode = 409;
+            throw error;
         }
 
         const idCategorie = await this.categoriesRepository.create(
@@ -92,11 +100,17 @@ export class CategoriesService {
         idCategorie: number,
         nomCategorie: string,
         idUtilisateur: number
-    ): Promise<boolean> {
+    ): Promise<Categories> {
         nomCategorie = typeof nomCategorie === 'string' ? nomCategorie.trim() : '';
 
         if (!nomCategorie) {
             const error = new Error("Le nom de la catégorie est obligatoire.") as Error & { statusCode?: number };
+            error.statusCode = 400;
+            throw error;
+        }
+
+        if (nomCategorie.length > 50) {
+            const error = new Error("Le nom de la catégorie ne doit pas dépasser 50 caractères.") as Error & { statusCode?: number };
             error.statusCode = 400;
             throw error;
         }
@@ -114,15 +128,22 @@ export class CategoriesService {
 
         if (categorie.idUtilisateur === null) {
             const error = new Error("Les catégories système ne peuvent pas être modifiées.") as Error & { statusCode?: number };
-            error.statusCode = 400;
+            error.statusCode = 403;
             throw error;
         }
 
-        return this.categoriesRepository.update(
+        await this.categoriesRepository.update(
             idCategorie,
             nomCategorie,
             idUtilisateur
         );
+
+        const misAJour = await this.categoriesRepository.findById(idCategorie, idUtilisateur);
+        if (!misAJour) {
+            throw new Error("Catégorie introuvable après mise à jour.");
+        }
+
+        return this.mapCategorie(misAJour);
     }
 
     /**
@@ -145,7 +166,7 @@ export class CategoriesService {
 
         if (categorie.idUtilisateur === null) {
             const error = new Error("Les catégories système ne peuvent pas être supprimées.") as Error & { statusCode?: number };
-            error.statusCode = 400;
+            error.statusCode = 403;
             throw error;
         }
 

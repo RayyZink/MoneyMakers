@@ -16,8 +16,6 @@ export interface VirementUpdateDTO {
     commentaire?:  string | null;
 }
 
-const ID_UTILISATEUR_PAR_DEFAUT = 1;
-
 const mapToDetail = (row: Record<string, unknown>) => ({
     idVirement:               row.idVirement,
     idCompteDebit:            row.idCompteDebit,
@@ -31,23 +29,40 @@ const mapToDetail = (row: Record<string, unknown>) => ({
 export class VirementsService {
     constructor(private virementsRepository: VirementsRepository) {}
 
+    /**
+     * Vérifie que l'utilisateur est impliqué dans le virement (compte
+     * débiteur ou créditeur). Lève 404 si le virement n'existe pas ou
+     * si l'utilisateur n'y est pas impliqué (pour ne pas révéler l'existence
+     * d'un virement appartenant à quelqu'un d'autre).
+     */
+    private async assertImplique(idVirement: number, idUtilisateur: number): Promise<void> {
+        const implique = await this.virementsRepository.estImpliqueDansVirement(idVirement, idUtilisateur);
+        if (!implique) {
+            const err: any = new Error('Virement introuvable');
+            err.statusCode = 404;
+            throw err;
+        }
+    }
+
     // ----------------------------------------------------------------
     // POST /virements
     // ----------------------------------------------------------------
-    async createVirement(dto: VirementCreationDTO): Promise<Record<string, unknown>> {
+    async createVirement(dto: VirementCreationDTO, idUtilisateur: number): Promise<Record<string, unknown>> {
         if (dto.idCompteDebit === dto.idCompteCredit) {
             const err: any = new Error('Le compte débiteur et le compte créditeur doivent être différents');
             err.statusCode = 422;
             throw err;
         }
 
+        // La procédure stockée creerVirement vérifie en base que idUtilisateur
+        // possède bien idCompteDebit (SIGNAL SQLSTATE 45000 sinon -> 422 via errorMiddleware).
         const idVirement = await this.virementsRepository.creerVirement(
             dto.idCompteDebit,
             dto.idCompteCredit,
             dto.montant,
             dto.dateVirement    ?? null,
             dto.commentaire     ?? null,
-            ID_UTILISATEUR_PAR_DEFAUT,
+            idUtilisateur,
             dto.idCategorie     ?? null,
             dto.idSousCategorie ?? null,
         );
@@ -60,7 +75,9 @@ export class VirementsService {
     // ----------------------------------------------------------------
     // GET /virements/:idVirement
     // ----------------------------------------------------------------
-    async getVirementById(idVirement: number): Promise<Record<string, unknown>> {
+    async getVirementById(idVirement: number, idUtilisateur: number): Promise<Record<string, unknown>> {
+        await this.assertImplique(idVirement, idUtilisateur);
+
         const row = await this.virementsRepository.findVirementById(idVirement);
         if (!row) {
             const err: any = new Error('Virement introuvable'); err.statusCode = 404; throw err;
@@ -71,11 +88,8 @@ export class VirementsService {
     // ----------------------------------------------------------------
     // PUT /virements/:idVirement
     // ----------------------------------------------------------------
-    async updateVirement(idVirement: number, dto: VirementUpdateDTO): Promise<Record<string, unknown>> {
-        const existe = await this.virementsRepository.findVirementById(idVirement);
-        if (!existe) {
-            const err: any = new Error('Virement introuvable'); err.statusCode = 404; throw err;
-        }
+    async updateVirement(idVirement: number, idUtilisateur: number, dto: VirementUpdateDTO): Promise<Record<string, unknown>> {
+        await this.assertImplique(idVirement, idUtilisateur);
 
         await this.virementsRepository.updateVirement(idVirement, dto);
 
@@ -87,11 +101,8 @@ export class VirementsService {
     // ----------------------------------------------------------------
     // DELETE /virements/:idVirement
     // ----------------------------------------------------------------
-    async deleteVirement(idVirement: number): Promise<void> {
-        const existe = await this.virementsRepository.findVirementById(idVirement);
-        if (!existe) {
-            const err: any = new Error('Virement introuvable'); err.statusCode = 404; throw err;
-        }
+    async deleteVirement(idVirement: number, idUtilisateur: number): Promise<void> {
+        await this.assertImplique(idVirement, idUtilisateur);
         await this.virementsRepository.deleteVirement(idVirement);
     }
 }

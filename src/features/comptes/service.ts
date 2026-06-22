@@ -29,11 +29,21 @@ const mapToDetail = (row: Record<string, unknown>) => ({
 export class ComptesService {
     constructor(private comptesRepository: ComptesRepository) {}
 
+    private async assertProprietaireCompte(idCompte: number, idUtilisateur: number): Promise<void> {
+        const comptes: any = await this.comptesRepository.findById(idCompte, idUtilisateur);
+        if (comptes.length === 0) {
+            const err: any = new Error('Compte introuvable');
+            err.statusCode = 404;
+            throw err;
+        }
+    }
+
     // ----------------------------------------------------------------
     // GET /comptes/:idCompte/mouvements
     // ----------------------------------------------------------------
     async getMouvementsPourCompte(
         idCompte: number,
+        idUtilisateur: number,
         filtres: {
             dateDebut?:     string;
             dateFin?:       string;
@@ -42,8 +52,11 @@ export class ComptesService {
             limit:          number;
         },
     ) {
+        await this.assertProprietaireCompte(idCompte, idUtilisateur);
+
         const { rows, total } = await this.comptesRepository.findMouvementsByCompteId(
             idCompte,
+            idUtilisateur,
             filtres as MouvementFiltres,
         );
 
@@ -64,9 +77,12 @@ export class ComptesService {
     // POST /comptes/:idCompte/mouvements
     // ----------------------------------------------------------------
     async createMouvement(
-        idCompte: number,
-        dto:      MouvementCreationDTO,
+        idCompte:      number,
+        idUtilisateur: number,
+        dto:           MouvementCreationDTO,
     ): Promise<Record<string, unknown>> {
+        await this.assertProprietaireCompte(idCompte, idUtilisateur);
+
         const idMouvement = await this.comptesRepository.createMouvement(
             idCompte,
             dto.dateMouvement   ?? null,
@@ -77,7 +93,7 @@ export class ComptesService {
             dto.typeMouvement,
         );
 
-        const row = await this.comptesRepository.findMouvementById(idMouvement);
+        const row = await this.comptesRepository.findMouvementById(idMouvement, idUtilisateur);
         if (!row) throw new Error('Mouvement introuvable après création');
         return mapToDetail(row as Record<string, unknown>);
     }
@@ -86,8 +102,8 @@ export class ComptesService {
         return await this.comptesRepository.findByUtilisateur(idUtilisateur);
     }
 
-    async getCompteById(idCompte: number) {
-        const comptes: any = await this.comptesRepository.findById(idCompte);
+    async getCompteById(idCompte: number, idUtilisateur: number) {
+        const comptes: any = await this.comptesRepository.findById(idCompte, idUtilisateur);
         if (comptes.length === 0) {
             return null;
         }
@@ -96,20 +112,27 @@ export class ComptesService {
 
     async createCompte(idUtilisateur: number, descriptionCompte: string, nomBanque: string, montantInitial: number) {
         const result: any = await this.comptesRepository.create(idUtilisateur, descriptionCompte, nomBanque, montantInitial);
-        return await this.getCompteById(result.insertId);
+        return await this.getCompteById(result.insertId, idUtilisateur);
     }
 
-    async updateCompte(idCompte: number, descriptionCompte: string, nomBanque: string) {
-        await this.comptesRepository.update(idCompte, descriptionCompte, nomBanque);
-        return await this.getCompteById(idCompte);
+    async updateCompte(
+        idCompte: number,
+        idUtilisateur: number,
+        champs: { descriptionCompte?: string; nomBanque?: string },
+    ) {
+        await this.assertProprietaireCompte(idCompte, idUtilisateur);
+        await this.comptesRepository.update(idCompte, idUtilisateur, champs);
+        return await this.getCompteById(idCompte, idUtilisateur);
     }
 
-    async deleteCompte(idCompte: number) {
-        await this.comptesRepository.delete(idCompte);
+    async deleteCompte(idCompte: number, idUtilisateur: number) {
+        await this.assertProprietaireCompte(idCompte, idUtilisateur);
+        await this.comptesRepository.delete(idCompte, idUtilisateur);
     }
 
-    async getSolde(idCompte: number, date: string) {
-        const result: any = await this.comptesRepository.getSolde(idCompte, date);
+    async getSolde(idCompte: number, idUtilisateur: number, date: string) {
+        await this.assertProprietaireCompte(idCompte, idUtilisateur);
+        const result: any = await this.comptesRepository.getSolde(idCompte, idUtilisateur, date);
         return result[0];
     }
 

@@ -29,13 +29,27 @@ const mapToDetail = (row: Record<string, unknown>) => ({
 export class MouvementsService {
     constructor(private mouvementsRepository: MouvementsRepository) {}
 
+    /**
+     * Vérifie que le mouvement existe ET appartient à l'utilisateur connecté
+     * (via le compte parent). Lève 404 dans les deux cas, pour ne pas révéler
+     * l'existence d'un mouvement appartenant à un autre utilisateur.
+     */
+    private async assertProprietaire(idMouvement: number, idUtilisateur: number): Promise<void> {
+        const proprietaire = await this.mouvementsRepository.findProprietaireMouvement(idMouvement);
+        if (!proprietaire || proprietaire.idUtilisateur !== idUtilisateur) {
+            const err: any = new Error('Mouvement introuvable');
+            err.statusCode = 404;
+            throw err;
+        }
+    }
 
     // ----------------------------------------------------------------
     // GET /mouvements/:idMouvement
     // ----------------------------------------------------------------
-    async getMouvementById(idMouvement: number): Promise<Record<string, unknown>> {
-        const row = await this.mouvementsRepository.findMouvementById(idMouvement);
+    async getMouvementById(idMouvement: number, idUtilisateur: number): Promise<Record<string, unknown>> {
+        await this.assertProprietaire(idMouvement, idUtilisateur);
 
+        const row = await this.mouvementsRepository.findMouvementById(idMouvement);
         if (!row) {
             const err: any = new Error('Mouvement introuvable');
             err.statusCode = 404;
@@ -49,15 +63,11 @@ export class MouvementsService {
     // PUT /mouvements/:idMouvement
     // ----------------------------------------------------------------
     async updateMouvement(
-        idMouvement: number,
-        dto:         MouvementUpdateDTO,
+        idMouvement:   number,
+        idUtilisateur: number,
+        dto:           MouvementUpdateDTO,
     ): Promise<Record<string, unknown>> {
-        const proprietaire = await this.mouvementsRepository.findProprietaireMouvement(idMouvement);
-        if (!proprietaire) {
-            const err: any = new Error('Mouvement introuvable');
-            err.statusCode = 404;
-            throw err;
-        }
+        await this.assertProprietaire(idMouvement, idUtilisateur);
 
         await this.mouvementsRepository.updateMouvement(idMouvement, dto);
 
@@ -69,13 +79,8 @@ export class MouvementsService {
     // ----------------------------------------------------------------
     // DELETE /mouvements/:idMouvement
     // ----------------------------------------------------------------
-    async deleteMouvement(idMouvement: number): Promise<void> {
-        const proprietaire = await this.mouvementsRepository.findProprietaireMouvement(idMouvement);
-        if (!proprietaire) {
-            const err: any = new Error('Mouvement introuvable');
-            err.statusCode = 404;
-            throw err;
-        }
+    async deleteMouvement(idMouvement: number, idUtilisateur: number): Promise<void> {
+        await this.assertProprietaire(idMouvement, idUtilisateur);
 
         await this.mouvementsRepository.deleteMouvement(idMouvement);
     }

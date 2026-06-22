@@ -43,9 +43,6 @@ export class AuthController {
         }
     };
 
-    // ⬅️ TA TÂCHE : déconnexion
-    // JWT = stateless. Le serveur valide juste le token (via authGuard) puis répond 204.
-    // C'est au front de supprimer le token stocké. Voir la note plus bas pour une vraie invalidation.
     logout = async (_req: Request, res: Response) => {
         res.status(204).send();
     };

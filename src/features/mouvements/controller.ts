@@ -1,18 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
 import { MouvementsService, MouvementUpdateDTO } from './service';
+import { AuthenticatedRequest } from '../../middlewares/auth';
 
 export class MouvementsController {
     constructor(private mouvementsService: MouvementsService) {}
 
+    private getUserId(req: AuthenticatedRequest): number {
+        const idUtilisateur = req.user?.idUtilisateur;
+        if (idUtilisateur === undefined || idUtilisateur === null) {
+            const error: any = new Error('Utilisateur non authentifié');
+            error.statusCode = 401;
+            throw error;
+        }
+        return idUtilisateur;
+    }
 
     // ----------------------------------------------------------------
     // GET /mouvements/:idMouvement
     // ----------------------------------------------------------------
-    async getMouvementById(req: Request, res: Response, next: NextFunction) {
+    async getMouvementById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
         try {
+            const idUtilisateur = this.getUserId(req);
             const idMouvement = parseInt(req.params.idMouvement, 10);
 
-            const mouvement = await this.mouvementsService.getMouvementById(idMouvement);
+            const mouvement = await this.mouvementsService.getMouvementById(idMouvement, idUtilisateur);
 
             return res.status(200).json(mouvement);
         } catch (error) {
@@ -23,8 +34,9 @@ export class MouvementsController {
     // ----------------------------------------------------------------
     // PUT /mouvements/:idMouvement
     // ----------------------------------------------------------------
-    async updateMouvement(req: Request, res: Response, next: NextFunction) {
+    async updateMouvement(req: AuthenticatedRequest, res: Response, next: NextFunction) {
         try {
+            const idUtilisateur = this.getUserId(req);
             const idMouvement = parseInt(req.params.idMouvement, 10);
 
             // Mise à jour partielle : on ne transmet que les champs
@@ -38,7 +50,7 @@ export class MouvementsController {
             if ('montant'         in body) dto.montant         = body.montant         as number;
             if ('typeMouvement'   in body) dto.typeMouvement   = body.typeMouvement   as 'D' | 'C';
 
-            const mouvement = await this.mouvementsService.updateMouvement(idMouvement, dto);
+            const mouvement = await this.mouvementsService.updateMouvement(idMouvement, idUtilisateur, dto);
 
             return res.status(200).json(mouvement);
         } catch (error) {
@@ -49,11 +61,12 @@ export class MouvementsController {
     // ----------------------------------------------------------------
     // DELETE /mouvements/:idMouvement
     // ----------------------------------------------------------------
-    async deleteMouvement(req: Request, res: Response, next: NextFunction) {
+    async deleteMouvement(req: AuthenticatedRequest, res: Response, next: NextFunction) {
         try {
+            const idUtilisateur = this.getUserId(req);
             const idMouvement = parseInt(req.params.idMouvement, 10);
 
-            await this.mouvementsService.deleteMouvement(idMouvement);
+            await this.mouvementsService.deleteMouvement(idMouvement, idUtilisateur);
 
             return res.status(204).send();
         } catch (error) {

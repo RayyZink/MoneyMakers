@@ -20,14 +20,14 @@ export class TiersRepository {
     }
 
     // 1. Compter le total pour la pagination
-    const countQuery = `SELECT COUNT(*) as total FROM TIERS ${whereClause}`;
+    const countQuery = `SELECT COUNT(*) as total FROM Tiers ${whereClause}`;
     const [countRows] = await this.db.query(countQuery, queryArgs);
     const total = (countRows as any)[0].total;
 
     // 2. Récupérer les données réelles
     const dataQuery = `
       SELECT idTiers, nomTiers, idUtilisateur, idSousCategorieDefaut
-      FROM TIERS
+      FROM Tiers
       ${whereClause}
       ORDER BY nomTiers ASC
       LIMIT ? OFFSET ?
@@ -42,7 +42,7 @@ export class TiersRepository {
   async findById(idTiers: number, idUtilisateur: number): Promise<any | null> {
     const query = `
       SELECT idTiers, nomTiers, idUtilisateur, idSousCategorieDefaut
-      FROM TIERS
+      FROM Tiers
       WHERE idTiers = ? AND idUtilisateur = ?
     `;
     const [rows] = await this.db.query(query, [idTiers, idUtilisateur]);
@@ -52,7 +52,7 @@ export class TiersRepository {
 
   async create(nomTiers: string, idSousCategorieDefaut: number | null, idUtilisateur: number): Promise<number> {
     const query = `
-      INSERT INTO TIERS (nomTiers, idSousCategorieDefaut, idUtilisateur)
+      INSERT INTO Tiers (nomTiers, idSousCategorieDefaut, idUtilisateur)
       VALUES (?, ?, ?)
     `;
     const [result] = await this.db.query(query, [nomTiers, idSousCategorieDefaut, idUtilisateur]);
@@ -66,7 +66,7 @@ export class TiersRepository {
     idUtilisateur: number
   ): Promise<boolean> {
     const query = `
-      UPDATE TIERS
+      UPDATE Tiers
       SET nomTiers = ?, idSousCategorieDefaut = ?
       WHERE idTiers = ? AND idUtilisateur = ?
     `;
@@ -76,7 +76,7 @@ export class TiersRepository {
 
   async delete(idTiers: number, idUtilisateur: number): Promise<boolean> {
     const query = `
-      DELETE FROM TIERS
+      DELETE FROM Tiers
       WHERE idTiers = ? AND idUtilisateur = ?
     `;
     const [result] = await this.db.query(query, [idTiers, idUtilisateur]);

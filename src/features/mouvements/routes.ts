@@ -3,12 +3,15 @@ import { MouvementsController } from './controller';
 import { MouvementsService }    from './service';
 import { MouvementsRepository } from './repository';
 import { pool }                 from '../../config/database';
+import { authMiddleware }       from '../../middlewares/auth';
 
 const router = Router();
 
 const repository = new MouvementsRepository(pool);
 const service    = new MouvementsService(repository);
 const controller = new MouvementsController(service);
+
+router.use(authMiddleware);
 
 // ----------------------------------------------------------------
 // Routes sous /comptes/:idCompte/mouvements

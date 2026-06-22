@@ -11,7 +11,7 @@ export interface MouvementFiltres {
 export class ComptesRepository {
     constructor(private db: Pool) {}
 
-    async findMouvementById(idMouvement: number): Promise<RowDataPacket | null> {
+    async findMouvementById(idMouvement: number, idUtilisateur: number): Promise<RowDataPacket | null> {
         const query = `
             SELECT
                 m.idMouvement,
@@ -30,9 +30,9 @@ export class ComptesRepository {
                 m.typeMouvement,
                 m.idVirement
             FROM V_MOUVEMENT m
-            WHERE m.idMouvement = ?
+            WHERE m.idMouvement = ? AND m.idUtilisateur = ?
         `;
-        const [rows] = await this.db.query<RowDataPacket[]>(query, [idMouvement]);
+        const [rows] = await this.db.query<RowDataPacket[]>(query, [idMouvement, idUtilisateur]);
         return rows[0] ?? null;
     }
 
@@ -41,14 +41,15 @@ export class ComptesRepository {
     // ----------------------------------------------------------------
     async findMouvementsByCompteId(
         idCompte: number,
+        idUtilisateur: number,
         filtres: MouvementFiltres,
     ): Promise<{ rows: RowDataPacket[]; total: number }> {
         const { dateDebut, dateFin, typeMouvement, page, limit } = filtres;
         const offset = (page - 1) * limit;
 
         // Conditions dynamiques
-        const conditions: string[] = ['m.idCompte = ?'];
-        const params: unknown[]    = [idCompte];
+        const conditions: string[] = ['m.idCompte = ?', 'm.idUtilisateur = ?'];
+        const params: unknown[]    = [idCompte, idUtilisateur];
 
         if (dateDebut) {
             conditions.push('m.dateMouvement >= ?');
@@ -85,7 +86,7 @@ export class ComptesRepository {
             FROM V_MOUVEMENT m
             WHERE ${where}
             ORDER BY m.dateMouvement DESC, m.idMouvement DESC
-            LIMIT ? OFFSET ?
+                LIMIT ? OFFSET ?
         `;
         const queryCount = `
             SELECT COUNT(*) AS total
@@ -121,14 +122,14 @@ export class ComptesRepository {
                 montant,
                 typeMouvement
             ) VALUES (
-                COALESCE(?, CURDATE()),
-                ?,
-                ?,
-                ?,
-                ?,
-                ?,
-                ?
-            )
+                         COALESCE(?, CURDATE()),
+                         ?,
+                         ?,
+                         ?,
+                         ?,
+                         ?,
+                         ?
+                     )
         `;
         const [result] = await this.db.query<ResultSetHeader>(query, [
             dateMouvement,
@@ -150,10 +151,10 @@ export class ComptesRepository {
         return rows;
     }
 
-    async findById(idCompte: number) {
+    async findById(idCompte: number, idUtilisateur: number) {
         const [rows] = await this.db.query(
-            'SELECT * FROM Compte WHERE idCompte = ?',
-            [idCompte]
+            'SELECT * FROM Compte WHERE idCompte = ? AND idUtilisateur = ?',
+            [idCompte, idUtilisateur]
         );
         return rows;
     }
@@ -166,23 +167,44 @@ export class ComptesRepository {
         return result;
     }
 
-    async update(idCompte: number, descriptionCompte: string, nomBanque: string) {
+    async update(
+        idCompte: number,
+        idUtilisateur: number,
+        champs: { descriptionCompte?: string; nomBanque?: string },
+    ) {
+        const sets:   string[]  = [];
+        const params: unknown[] = [];
+
+        if ('descriptionCompte' in champs) { sets.push('descriptionCompte = ?'); params.push(champs.descriptionCompte); }
+        if ('nomBanque'          in champs) { sets.push('nomBanque = ?');          params.push(champs.nomBanque); }
+
+        if (sets.length === 0) return { affectedRows: 0 };
+
+        params.push(idCompte, idUtilisateur);
+
         const [result] = await this.db.query(
-            'UPDATE Compte SET descriptionCompte = ?, nomBanque = ? WHERE idCompte = ?',
-            [descriptionCompte, nomBanque, idCompte]
+            `UPDATE Compte SET ${sets.join(', ')} WHERE idCompte = ? AND idUtilisateur = ?`,
+            params
         );
         return result;
     }
 
-    async delete(idCompte: number) {
+    async delete(idCompte: number, idUtilisateur: number) {
         const [result] = await this.db.query(
-            'DELETE FROM Compte WHERE idCompte = ?',
-            [idCompte]
+            'DELETE FROM Compte WHERE idCompte = ? AND idUtilisateur = ?',
+            [idCompte, idUtilisateur]
         );
         return result;
     }
 
-    async getSolde(idCompte: number, date: string) {
+    async getSolde(idCompte: number, idUtilisateur: number, date: string) {
+        // On vérifie d'abord que le compte appartient bien à l'utilisateur
+        const [comptes] = await this.db.query<RowDataPacket[]>(
+            'SELECT idCompte FROM Compte WHERE idCompte = ? AND idUtilisateur = ?',
+            [idCompte, idUtilisateur]
+        );
+        if (comptes.length === 0) return [];
+
         const [rows] = await this.db.query(
             'SELECT soldeHistorique(?, ?) AS solde',
             [idCompte, date]
