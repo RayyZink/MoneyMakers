@@ -6,6 +6,23 @@ Ce guide explique comment installer l'application, l'utiliser via Swagger, et te
 
 ---
 
+## Notes de Cadrage Fonctionnel et Métier
+
+L'application MoneyMakers repose sur la réécriture et la modernisation d'une base pensée à l'origine pour du mono-utilisateur :
+
+- **Migration Multi-utilisateur :** L'application est strictement multi-utilisateurs. Chaque utilisateur possède et gère ses propres comptes, ses propres tiers et ses propres catégories/sous-catégories.
+- **Création dynamique :** Les catégories et sous-catégories ne sont pas figées en base de données. L'utilisateur final peut instancier ses propres structures budgétaires à tout moment.
+- **Cloisonnement et Confidentialité :** L'API garantit qu'un utilisateur ne peut jamais voir, modifier ou manipuler les catégories, comptes ou mouvements d'un autre utilisateur.
+- **Sécurité Anti-Fraude :** L'API et le SGBD collaborent pour bloquer toute opération frauduleuse. Des triggers spécifiques (`SIGNAL SQLSTATE '45000'`) rejettent les requêtes d'insertion ou de modification si un utilisateur tente d'associer une catégorie ou un tiers qui ne lui appartient pas.
+- **Atomisation des Flux :** La création d'un virement (via la procédure stockée `creerVirement`) génère automatiquement et de manière atomique deux mouvements en base de données : un débit sur le compte émetteur et un crédit sur le compte récepteur.
+- **Spécifications Complètes :** [Google Doc - Spécifications Money API](https://docs.google.com/document/d/1BjyCx92OEzXsKWaT_WiEJuKxd-OY3fIjIaO5Hr42Un0/edit?tab=t.0)
+
+- **Grille d'évaluation de l'API :** [Google sheet - Grille d'évaluation](https://docs.google.com/spreadsheets/d/1XH-ubJQZ47jEu012_QayPxYYJ8LDeVUBSldTtPeyvnk/edit?gid=0#gid=0)
+---
+
+
+---
+
 ## 1. Installation et démarrage
 
 ### Prérequis
