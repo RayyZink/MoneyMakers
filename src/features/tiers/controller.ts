@@ -7,8 +7,7 @@ export class TiersController {
   async getAll(req: Request, res: Response, next: NextFunction) {
     try {
       const idUtilisateur = (req as any).user.idUtilisateur;
-      
-      // Extraction des paramètres de pagination conformes aux defaults du Swagger
+
       const page = parseInt(req.query.page as string, 10) || 1;
       const limit = parseInt(req.query.limit as string, 10) || 20;
       const search = req.query.search as string | undefined;
@@ -63,7 +62,7 @@ export class TiersController {
       const idTiers = parseInt(req.params.idTiers, 10);
 
       await this.tiersService.supprimerTiers(idTiers, idUtilisateur);
-      return res.status(204).send(); // 204 No Content d'après le Swagger
+      return res.status(204).send();
     } catch (error) {
       next(error);
     }

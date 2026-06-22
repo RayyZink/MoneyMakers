@@ -13,17 +13,6 @@ const controller = new MouvementsController(service);
 
 router.use(authMiddleware);
 
-// ----------------------------------------------------------------
-// Routes sous /comptes/:idCompte/mouvements
-// (monté sur le router principal avec le préfixe /comptes)
-// ----------------------------------------------------------------
-
-
-
-// ----------------------------------------------------------------
-// Routes sous /mouvements/:idMouvement
-// (monté sur le router principal avec le préfixe /mouvements)
-// ----------------------------------------------------------------
 
 // OPTIONS /mouvements/:idMouvement   — CORS preflight
 router.options('/:idMouvement', (_req, res) => {

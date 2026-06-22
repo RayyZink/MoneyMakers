@@ -43,8 +43,6 @@ export class SousCategoriesRepository {
     }
 
     async create(idCategorie: number, nomSousCategorie: string, montantBase: number | null, periode: string): Promise<number> {
-        // La sécurité anti-fraude (vérifier que la catégorie appartient bien à l'utilisateur)
-        // est gérée par le trigger SQL 45000 défini dans votre base de données.
         const query = `
             INSERT INTO SousCategorie (nomSousCategorie, idCategorie, montant_base, periode)
             VALUES (?, ?, ?, ?)
@@ -60,8 +58,6 @@ export class SousCategoriesRepository {
         periode: string,
         idUtilisateur: number
     ): Promise<boolean> {
-        // Le JOIN assure qu'on ne modifie que si la catégorie parente appartient à l'utilisateur connecté,
-        // ou s'il s'agit d'une sous-catégorie système (catégorie parente sans propriétaire)
         const query = `
             UPDATE SousCategorie sc
                 JOIN Categorie c ON sc.idCategorie = c.idCategorie
@@ -73,7 +69,6 @@ export class SousCategoriesRepository {
     }
 
     async delete(idSousCategorie: number, idUtilisateur: number): Promise<boolean> {
-        // Suppression sécurisée par le JOIN
         const query = `
             DELETE sc FROM SousCategorie sc
       JOIN Categorie c ON sc.idCategorie = c.idCategorie

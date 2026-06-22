@@ -80,7 +80,6 @@ export class SousCategoriesService {
       throw error;
     }
 
-    // On récupère l'état complet après mise à jour pour renvoyer le bon objet
     return await this.getSousCategorieParId(idSousCategorie, idUtilisateur);
   }
 

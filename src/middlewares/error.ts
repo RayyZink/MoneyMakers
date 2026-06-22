@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
-// Interface interne pour typer les erreurs enrichies
+// Interface interne pour typer les erreurs
 interface AppError extends Error {
     statusCode?: number;
     sqlState?: string;
@@ -26,7 +26,7 @@ export const errorMiddleware = (
     res: Response,
     _next: NextFunction
 ): void => {
-    // 1. Trigger MySQL SQLSTATE '45000'
+    // Trigger MySQL SQLSTATE '45000'
     if (err.sqlState === '45000') {
         res.status(422).json({
             code: 422,
@@ -48,7 +48,7 @@ export const errorMiddleware = (
         return;
     }
 
-    // 3. Erreurs JWT
+    // Erreurs JWT
     if (
         err.name === 'JsonWebTokenError' ||
         err.name === 'TokenExpiredError' ||
@@ -63,7 +63,7 @@ export const errorMiddleware = (
         return;
     }
 
-    // 4. Erreurs HTTP métier (statusCode porté par l'erreur)
+    // Erreurs HTTP métier (statusCode porté par l'erreur)
     if (err.statusCode && err.statusCode >= 400 && err.statusCode < 500) {
         res.status(err.statusCode).json({
             code: err.statusCode,
@@ -72,7 +72,7 @@ export const errorMiddleware = (
         return;
     }
 
-    // 5. Erreur générique 500
+    // Erreur générique 500
     console.error('[MoneyMakers] Erreur non gérée :', err);
     res.status(500).json({
         code: 500,

@@ -39,8 +39,6 @@ export class MouvementsController {
             const idUtilisateur = this.getUserId(req);
             const idMouvement = parseInt(req.params.idMouvement, 10);
 
-            // Mise à jour partielle : on ne transmet que les champs
-            // explicitement présents dans le body.
             const body = req.body as Record<string, unknown>;
             const dto: MouvementUpdateDTO = {};
             if ('dateMouvement'   in body) dto.dateMouvement   = body.dateMouvement   as string | null;

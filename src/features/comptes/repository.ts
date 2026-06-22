@@ -47,7 +47,6 @@ export class ComptesRepository {
         const { dateDebut, dateFin, typeMouvement, page, limit } = filtres;
         const offset = (page - 1) * limit;
 
-        // Conditions dynamiques
         const conditions: string[] = ['m.idCompte = ?', 'm.idUtilisateur = ?'];
         const params: unknown[]    = [idCompte, idUtilisateur];
 

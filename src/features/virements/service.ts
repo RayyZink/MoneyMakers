@@ -54,8 +54,6 @@ export class VirementsService {
             throw err;
         }
 
-        // La procédure stockée creerVirement vérifie en base que idUtilisateur
-        // possède bien idCompteDebit (SIGNAL SQLSTATE 45000 sinon -> 422 via errorMiddleware).
         const idVirement = await this.virementsRepository.creerVirement(
             dto.idCompteDebit,
             dto.idCompteCredit,

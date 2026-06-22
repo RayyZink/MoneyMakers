@@ -3,7 +3,6 @@ import { Pool } from 'mysql2/promise';
 export class TiersRepository {
   constructor(private db: Pool) {}
 
-  // Récupérer les tiers paginés et filtrés
   async findAndCountAll(
     idUtilisateur: number,
     page: number,
@@ -19,12 +18,10 @@ export class TiersRepository {
       queryArgs.push(`%${search}%`);
     }
 
-    // 1. Compter le total pour la pagination
     const countQuery = `SELECT COUNT(*) as total FROM Tiers ${whereClause}`;
     const [countRows] = await this.db.query(countQuery, queryArgs);
     const total = (countRows as any)[0].total;
 
-    // 2. Récupérer les données réelles
     const dataQuery = `
       SELECT idTiers, nomTiers, idUtilisateur, idSousCategorieDefaut
       FROM Tiers
@@ -32,8 +29,7 @@ export class TiersRepository {
       ORDER BY nomTiers ASC
       LIMIT ? OFFSET ?
     `;
-    
-    // MySQL exige des nombres pour LIMIT/OFFSET (l'injection de tableaux peut passer des chaînes)
+
     const [rows] = await this.db.query(dataQuery, [...queryArgs, limit, offset]);
 
     return { rows: rows as any[], total };

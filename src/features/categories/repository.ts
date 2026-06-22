@@ -1,20 +1,14 @@
 import { Pool, RowDataPacket, ResultSetHeader } from "mysql2/promise";
  
-// ─── Types bruts retournés par la BDD ───────────────────────────────────────
- 
 export interface CategorieRow extends RowDataPacket {
   idCategorie: number;
   nomCategorie: string;
   idUtilisateur: number | null;
 }
- 
- 
-// ─── Repository ───────────────────────────────────────────────────────────────
+
  
 export class CategoriesRepository {
   constructor(private readonly db: Pool) {}
- 
-  // ── Catégories ──────────────────────────────────────────────────────────────
  
   /**
    * Retourne toutes les catégories accessibles à cet utilisateur :
